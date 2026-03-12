@@ -390,7 +390,16 @@ npm install
 npm run dev
 # App runs at: http://localhost:5173
 ```
+---
 
+Backend is running. Now start the tunnel:
+npx localtunnel --port 8000 --subdomain deeplearner-api
+
+curl -s https://ipv4.icanhazip.com
+
+When it shows the password page, the password is your IP from:
+
+After that, deep-learner-os.vercel.app should be fully functional — the Vercel frontend will connect to your M4 backend through the tunnel.
 ---
 
 ## 🧪 Test the Full Flow
@@ -427,3 +436,9 @@ Open your terminal and install the Google AI SDK along with python-dotenv (the l
 Bash
 pip install google-generativeai python-dotenv
 GEMINI_API_KEY=gen-lang-client-0229853464
+
+push to git 
+
+cd "/Users/nowh/Documents/DeepLearner_OS 2"
+git remote add origin https://github.com/JahadNoah/DeepLearner-OS.git
+git push -u origin main

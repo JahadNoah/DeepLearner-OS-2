@@ -722,7 +722,7 @@ def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]
     try:
         import ollama as _ollama
         ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-        ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:8b")
+        ollama_model = os.getenv("OLLAMA_MODEL", "qwen3:8b")
         client = _ollama.Client(host=ollama_host)
         resp = client.chat(
             model=ollama_model,

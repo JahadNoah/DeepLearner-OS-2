@@ -382,7 +382,7 @@ def summarize_text_ollama(text: str) -> str:
     Returns empty string on failure or if Ollama is offline.
     """
     ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:8b")
+    ollama_model = os.getenv("OLLAMA_MODEL", "qwen3:8b")
     try:
         import ollama as _ollama
         client = _ollama.Client(host=ollama_host)
