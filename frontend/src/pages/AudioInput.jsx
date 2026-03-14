@@ -2,16 +2,14 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import axios from "axios";
+import { useLanguage } from "../context/useLanguage";
+import { t } from "../i18n/translations";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-const TABS = [
-    { id: "audio", label: "🎙️ Audio", desc: "Rakam atau muat naik fail audio" },
-    { id: "pdf", label: "📄 PDF / Slaid", desc: "Muat naik nota kuliah atau slaid PDF" },
-];
-
 export default function AudioInput() {
     const [activeTab, setActiveTab] = useState("audio");
+    const { lang } = useLanguage();
 
     // Audio state
     const [audioFile, setAudioFile] = useState(null);
@@ -52,7 +50,7 @@ export default function AudioInput() {
             setRecordingTime(0);
             timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
         } catch {
-            setError("Tidak dapat akses mikrofon. Sila benarkan kebenaran.");
+            setError(t(lang, "audioInput.errMic"));
         }
     };
 
@@ -66,7 +64,7 @@ export default function AudioInput() {
 
     // ─── Submit Handlers ──────────────────────────────────────
     const handleSubmitAudio = async () => {
-        if (!audioFile) return setError("Sila pilih atau rakam fail audio terlebih dahulu.");
+        if (!audioFile) return setError(t(lang, "audioInput.errNoAudio"));
         setError(""); setLoading(true);
         const formData = new FormData();
         formData.append("audio", audioFile);
@@ -76,12 +74,12 @@ export default function AudioInput() {
             const res = await axios.post(`${API_URL}/transcribe`, formData);
             navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
         } catch {
-            setError("Gagal memproses audio. Pastikan server backend sedang berjalan.");
+            setError(t(lang, "audioInput.errAudio"));
         } finally { setLoading(false); }
     };
 
     const handleSubmitPdf = async () => {
-        if (!pdfFile) return setError("Sila pilih fail PDF terlebih dahulu.");
+        if (!pdfFile) return setError(t(lang, "audioInput.errNoPdf"));
         setError(""); setLoading(true);
         const formData = new FormData();
         formData.append("dokumen", pdfFile);
@@ -91,10 +89,10 @@ export default function AudioInput() {
             navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
         } catch (err) {
             if (!err.response) {
-                setError("Tidak dapat sambung ke server. Pastikan backend sedang berjalan di port 8000.");
+                setError(t(lang, "audioInput.errNoServer"));
             } else {
-                const msg = err.response?.data?.detail || "Gagal mengekstrak PDF. Sila cuba lagi.";
-                setError(typeof msg === "string" ? msg : "Gagal mengekstrak PDF. Sila cuba lagi.");
+                const msg = err.response?.data?.detail || t(lang, "audioInput.errPdf");
+                setError(typeof msg === "string" ? msg : t(lang, "audioInput.errPdf"));
             }
         } finally { setLoading(false); }
     };
@@ -112,15 +110,18 @@ export default function AudioInput() {
 
     return (
         <div className="page">
-            <div className="step-badge">Langkah 1 daripada 3</div>
-            <h1>📥 Input Kandungan</h1>
-            <p style={{ marginBottom: "2rem" }}>Pilih kaedah input — audio atau PDF/slaid — untuk ditukar kepada nota, ringkasan & kuiz.</p>
+            <div className="step-badge">{t(lang, "audioInput.stepBadge")}</div>
+            <h1>{t(lang, "audioInput.heading")}</h1>
+            <p style={{ marginBottom: "2rem" }}>{t(lang, "audioInput.subtitle")}</p>
 
             {error && <div className="error-msg" style={{ marginBottom: "1rem" }}>{error}</div>}
 
             {/* ── Tab Switcher ── */}
             <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.75rem" }}>
-                {TABS.map(tab => (
+                {[
+                    { id: "audio", label: t(lang, "audioInput.tabAudioLabel") },
+                    { id: "pdf", label: t(lang, "audioInput.tabPdfLabel") },
+                ].map(tab => (
                     <button
                         key={tab.id}
                         className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-outline"}`}
@@ -139,9 +140,9 @@ export default function AudioInput() {
                 <>
                     {/* Language selector */}
                     <div className="card" style={{ marginBottom: "1.5rem" }}>
-                        <h3 style={{ marginBottom: "1rem" }}>🌐 Bahasa Audio</h3>
+                        <h3 style={{ marginBottom: "1rem" }}>{t(lang, "audioInput.audioLangHeading")}</h3>
                         <div style={{ display: "flex", gap: "1rem" }}>
-                            {[["ms", "🇲🇾 Bahasa Melayu"], ["en", "🇬🇧 English"]].map(([val, label]) => (
+                            {[["ms", t(lang, "audioInput.langMs")], ["en", t(lang, "audioInput.langEn")]].map(([val, label]) => (
                                 <button key={val} className={`btn ${language === val ? "btn-primary" : "btn-outline"}`} onClick={() => setLanguage(val)}>
                                     {label}
                                 </button>
@@ -151,20 +152,20 @@ export default function AudioInput() {
 
                     {/* Live Recording */}
                     <div className="card" style={{ marginBottom: "1.5rem" }}>
-                        <h3 style={{ marginBottom: "1rem" }}>🔴 Rakaman Langsung</h3>
+                        <h3 style={{ marginBottom: "1rem" }}>{t(lang, "audioInput.recordHeading")}</h3>
                         {isRecording ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                                <div className="recording-indicator"><div className="rec-dot" /> Merakam... {formatTime(recordingTime)}</div>
-                                <button className="btn btn-danger" onClick={stopRecording}>⏹ Henti Rakaman</button>
+                                <div className="recording-indicator"><div className="rec-dot" /> {t(lang, "audioInput.recording", { time: formatTime(recordingTime) })}</div>
+                                <button className="btn btn-danger" onClick={stopRecording}>{t(lang, "audioInput.stopBtn")}</button>
                             </div>
                         ) : (
-                            <button className="btn btn-primary" onClick={startRecording}>🎙️ Mula Rakam</button>
+                            <button className="btn btn-primary" onClick={startRecording}>{t(lang, "audioInput.startBtn")}</button>
                         )}
                     </div>
 
                     {/* File Upload */}
                     <div className="card" style={{ marginBottom: "1.5rem" }}>
-                        <h3 style={{ marginBottom: "1rem" }}>📁 Muat Naik Fail Audio</h3>
+                        <h3 style={{ marginBottom: "1rem" }}>{t(lang, "audioInput.uploadHeading")}</h3>
                         <div
                             className={`upload-zone ${dragOver ? "drag-over" : ""}`}
                             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -173,22 +174,22 @@ export default function AudioInput() {
                             onClick={() => document.getElementById("audio-input").click()}
                         >
                             <div className="upload-icon">📂</div>
-                            <p style={{ color: "var(--text)", fontWeight: 600 }}>Klik atau seret fail audio ke sini</p>
-                            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>Sokongan: .mp3, .wav, .m4a, .webm, .ogg</p>
+                            <p style={{ color: "var(--text)", fontWeight: 600 }}>{t(lang, "audioInput.uploadPrompt")}</p>
+                            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>{t(lang, "audioInput.uploadHint")}</p>
                             <input id="audio-input" type="file" accept="audio/*" hidden onChange={(e) => setAudioFile(e.target.files[0])} />
                         </div>
                     </div>
 
                     {selectedFile && (
                         <div className="card" style={{ marginBottom: "1.5rem", background: "rgba(108,99,255,0.08)", borderColor: "var(--primary)" }}>
-                            <p style={{ color: "var(--text)", fontWeight: 600 }}>✅ Fail dipilih: {selectedFile.name}</p>
-                            <p style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>Saiz: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                            <p style={{ color: "var(--text)", fontWeight: 600 }}>{t(lang, "audioInput.fileSelected", { name: selectedFile.name })}</p>
+                            <p style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{t(lang, "audioInput.fileSize", { size: (selectedFile.size / 1024 / 1024).toFixed(2) })}</p>
                         </div>
                     )}
 
                     <button id="transcribe-btn" className="btn btn-primary" onClick={handleSubmitAudio}
                         disabled={loading || !audioFile} style={{ width: "100%", justifyContent: "center", padding: "1rem" }}>
-                        {loading ? "⏳ Sedang memproses..." : "🚀 Jana Transkripsi Audio"}
+                        {loading ? t(lang, "audioInput.submitLoading") : t(lang, "audioInput.submitBtn")}
                     </button>
                 </>
             )}
@@ -199,9 +200,9 @@ export default function AudioInput() {
             {activeTab === "pdf" && (
                 <>
                     <div className="card" style={{ marginBottom: "1.5rem" }}>
-                        <h3 style={{ marginBottom: "0.5rem" }}>📄 Muat Naik Nota / Slaid PDF</h3>
+                        <h3 style={{ marginBottom: "0.5rem" }}>{t(lang, "audioInput.pdfHeading")}</h3>
                         <p style={{ fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-                            Sistem akan mengekstrak teks daripada PDF anda, lalu menjana ringkasan dan kuiz secara automatik.
+                            {t(lang, "audioInput.pdfDesc")}
                         </p>
 
                         <div
@@ -212,32 +213,32 @@ export default function AudioInput() {
                             onClick={() => document.getElementById("pdf-input").click()}
                         >
                             <div className="upload-icon">📑</div>
-                            <p style={{ color: "var(--text)", fontWeight: 600 }}>Klik atau seret fail PDF ke sini</p>
-                            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>Format: .pdf (nota kuliah, slaid PowerPoint yang disimpan sebagai PDF)</p>
+                            <p style={{ color: "var(--text)", fontWeight: 600 }}>{t(lang, "audioInput.pdfUploadPrompt")}</p>
+                            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>{t(lang, "audioInput.pdfUploadHint")}</p>
                             <input id="pdf-input" type="file" accept=".pdf" hidden onChange={(e) => setPdfFile(e.target.files[0])} />
                         </div>
                     </div>
 
                     {/* Tips */}
                     <div className="card" style={{ marginBottom: "1.5rem", background: "rgba(67,232,216,0.05)", borderColor: "rgba(67,232,216,0.2)" }}>
-                        <h3 style={{ marginBottom: "0.75rem", color: "var(--accent)" }}>💡 Tips</h3>
+                        <h3 style={{ marginBottom: "0.75rem", color: "var(--accent)" }}>{t(lang, "audioInput.tipsHeading")}</h3>
                         <ul style={{ paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.9rem", color: "var(--text-sub)" }}>
-                            <li>PDF mesti mengandungi teks sebenar (bukan imbasan/imej)</li>
-                            <li>Slaid PowerPoint → simpan sebagai PDF sebelum muat naik</li>
-                            <li>Semakin banyak teks dalam PDF, semakin baik nota yang dijana</li>
+                            <li>{t(lang, "audioInput.tip1")}</li>
+                            <li>{t(lang, "audioInput.tip2")}</li>
+                            <li>{t(lang, "audioInput.tip3")}</li>
                         </ul>
                     </div>
 
                     {pdfFile && (
                         <div className="card" style={{ marginBottom: "1.5rem", background: "rgba(108,99,255,0.08)", borderColor: "var(--primary)" }}>
-                            <p style={{ color: "var(--text)", fontWeight: 600 }}>✅ Fail dipilih: {pdfFile.name}</p>
-                            <p style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>Saiz: {(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                            <p style={{ color: "var(--text)", fontWeight: 600 }}>{t(lang, "audioInput.fileSelected", { name: pdfFile.name })}</p>
+                            <p style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{t(lang, "audioInput.fileSize", { size: (pdfFile.size / 1024 / 1024).toFixed(2) })}</p>
                         </div>
                     )}
 
                     <button id="extract-pdf-btn" className="btn btn-primary" onClick={handleSubmitPdf}
                         disabled={loading || !pdfFile} style={{ width: "100%", justifyContent: "center", padding: "1rem" }}>
-                        {loading ? "⏳ Sedang mengekstrak teks..." : "📄 Ekstrak & Jana Nota"}
+                        {loading ? t(lang, "audioInput.pdfSubmitLoading") : t(lang, "audioInput.pdfSubmitBtn")}
                     </button>
                 </>
             )}
@@ -246,8 +247,8 @@ export default function AudioInput() {
             {loading && (
                 <div className="card processing-card" style={{ marginTop: "1.5rem" }}>
                     <div className="spinner" />
-                    <h3>{activeTab === "pdf" ? "AI sedang membaca PDF anda..." : "AI sedang memproses audio anda..."}</h3>
-                    <p>{activeTab === "pdf" ? "Mengekstrak teks dan menyediakan untuk ringkasan..." : "Ini mungkin mengambil masa beberapa minit bergantung kepada panjang audio."}</p>
+                    <h3>{activeTab === "pdf" ? t(lang, "audioInput.loadingPdfHeading") : t(lang, "audioInput.loadingAudioHeading")}</h3>
+                    <p>{activeTab === "pdf" ? t(lang, "audioInput.loadingPdfBody") : t(lang, "audioInput.loadingAudioBody")}</p>
                 </div>
             )}
         </div>

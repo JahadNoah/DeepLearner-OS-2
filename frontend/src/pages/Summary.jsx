@@ -4,6 +4,8 @@ import { auth, db } from "../firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import axios from "axios";
 import jsPDF from "jspdf";
+import { useLanguage } from "../context/useLanguage";
+import { t } from "../i18n/translations";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -11,6 +13,7 @@ export default function Summary() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { lang } = useLanguage();
     const [summary, setSummary] = useState(location.state?.summary || null);
     const [transcript] = useState(location.state?.transcript || null);
     const [loading, setLoading] = useState(false);
@@ -19,13 +22,12 @@ export default function Summary() {
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
 
-    // When navigating from History (no location.state), fetch summary from API
     useEffect(() => {
         if (!summary && id) {
             setLoadingSummary(true);
             axios.get(`${API_URL}/ringkasan/${id}`)
                 .then(res => setSummary(res.data))
-                .catch(() => setError("Gagal memuatkan ringkasan."))
+                .catch(() => setError(t(lang, "summary.errFetch")))
                 .finally(() => setLoadingSummary(false));
         }
     }, [id]);
@@ -44,7 +46,7 @@ export default function Summary() {
                 state: { quiz: res.data, summary, transcript }
             });
         } catch (err) {
-            setError("Gagal menjana kuiz. Sila cuba lagi.");
+            setError(t(lang, "summary.errQuiz"));
         } finally {
             setLoading(false);
         }
@@ -64,7 +66,7 @@ export default function Summary() {
             });
             setSaved(true);
         } catch (err) {
-            setError("Gagal menyimpan nota.");
+            setError(t(lang, "summary.errSave"));
         } finally {
             setSaving(false);
         }
@@ -74,15 +76,15 @@ export default function Summary() {
         const pdf = new jsPDF();
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(18);
-        pdf.text("DeepLearner OS - Ringkasan", 20, 20);
+        pdf.text(t(lang, "summary.pdfTitle"), 20, 20);
 
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(11);
-        pdf.text(`Tarikh: ${new Date().toLocaleDateString("ms-MY")}`, 20, 32);
+        pdf.text(t(lang, "summary.pdfDate", { date: new Date().toLocaleDateString("ms-MY") }), 20, 32);
 
         pdf.setFontSize(13);
         pdf.setFont("helvetica", "bold");
-        pdf.text("Ringkasan:", 20, 48);
+        pdf.text(t(lang, "summary.pdfSection"), 20, 48);
 
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(11);
@@ -97,7 +99,7 @@ export default function Summary() {
             <div className="page">
                 <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
                     <div className="spinner" style={{ margin: "0 auto" }} />
-                    <p style={{ marginTop: "1rem" }}>Memuatkan ringkasan...</p>
+                    <p style={{ marginTop: "1rem" }}>{t(lang, "summary.fetchLoading")}</p>
                 </div>
             </div>
         );
@@ -107,9 +109,9 @@ export default function Summary() {
         return (
             <div className="page">
                 <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-                    <p>{error || "Ringkasan tidak dijumpai."}</p>
+                    <p>{error || t(lang, "summary.notFound")}</p>
                     <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => navigate("/input")}>
-                        ← Kembali
+                        {t(lang, "summary.backBtn")}
                     </button>
                 </div>
             </div>
@@ -118,26 +120,26 @@ export default function Summary() {
 
     return (
         <div className="page">
-            <div className="step-badge">Langkah 1 ✓ → Langkah 2 ✓ → Langkah 3 daripada 3</div>
-            <h1>✨ Ringkasan Automatik</h1>
-            <p style={{ marginBottom: "2rem" }}>AI telah meringkaskan transkripsi anda. Semak dan teruskan untuk menjana kuiz.</p>
+            <div className="step-badge">{t(lang, "summary.stepBadge")}</div>
+            <h1>{t(lang, "summary.heading")}</h1>
+            <p style={{ marginBottom: "2rem" }}>{t(lang, "summary.subtitle")}</p>
 
             {error && <div className="error-msg" style={{ marginBottom: "1rem" }}>{error}</div>}
             {saved && (
                 <div className="error-msg" style={{ marginBottom: "1rem", background: "rgba(76,175,117,0.1)", borderColor: "rgba(76,175,117,0.3)", color: "var(--success)" }}>
-                    ✅ Nota berjaya disimpan ke sejarah anda!
+                    {t(lang, "summary.savedMsg")}
                 </div>
             )}
 
             <div className="card" style={{ marginBottom: "1.5rem" }}>
-                <h3 style={{ marginBottom: "1rem" }}>Teks Ringkasan</h3>
+                <h3 style={{ marginBottom: "1rem" }}>{t(lang, "summary.cardHeading")}</h3>
                 <div className="text-block">{summary.teksRingkasan}</div>
             </div>
 
             <div className="action-bar">
-                <button className="btn btn-outline" onClick={handleExportPDF}>📄 Eksport PDF</button>
+                <button className="btn btn-outline" onClick={handleExportPDF}>{t(lang, "summary.exportPdf")}</button>
                 <button className="btn btn-outline" onClick={handleSave} disabled={saving || saved}>
-                    {saved ? "✅ Disimpan" : saving ? "Menyimpan..." : "💾 Simpan Nota"}
+                    {saved ? t(lang, "summary.saved") : saving ? t(lang, "summary.saving") : t(lang, "summary.saveBtn")}
                 </button>
                 <button
                     id="quiz-btn"
@@ -145,17 +147,18 @@ export default function Summary() {
                     onClick={handleGenerateQuiz}
                     disabled={loading}
                 >
-                    {loading ? "⏳ Menjana Kuiz..." : "❓ Jana Kuiz MCQ →"}
+                    {loading ? t(lang, "summary.quizLoading") : t(lang, "summary.quizBtn")}
                 </button>
             </div>
 
             {loading && (
                 <div className="card processing-card" style={{ marginTop: "1.5rem" }}>
                     <div className="spinner" />
-                    <h3>AI sedang menjana soalan kuiz...</h3>
-                    <p>Ini mengambil masa beberapa saat sahaja.</p>
+                    <h3>{t(lang, "summary.loadingHeading")}</h3>
+                    <p>{t(lang, "summary.loadingBody")}</p>
                 </div>
             )}
         </div>
     );
 }
+

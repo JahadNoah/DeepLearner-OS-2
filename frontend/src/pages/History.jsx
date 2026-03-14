@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/useLanguage";
+import { t } from "../i18n/translations";
 
 export default function History() {
     const [notes, setNotes] = useState([]);
@@ -10,6 +12,7 @@ export default function History() {
     const [search, setSearch] = useState("");
     const [deleting, setDeleting] = useState(null);
     const navigate = useNavigate();
+    const { lang } = useLanguage();
     const noMatrik = auth.currentUser?.email?.split("@")[0] || "";
 
     useEffect(() => {
@@ -20,15 +23,12 @@ export default function History() {
         setLoading(true);
         setError("");
         try {
-            // orderBy is intentionally omitted to avoid requiring a composite
-            // Firestore index. We sort client-side instead.
             const q = query(
                 collection(db, "nota"),
                 where("noMatrik", "==", noMatrik)
             );
             const snap = await getDocs(q);
             const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            // Sort descending by tarikhSimpan client-side
             items.sort((a, b) => {
                 const ta = a.tarikhSimpan?.toDate?.() ?? new Date(a.tarikhSimpan ?? 0);
                 const tb = b.tarikhSimpan?.toDate?.() ?? new Date(b.tarikhSimpan ?? 0);
@@ -37,7 +37,7 @@ export default function History() {
             setNotes(items);
         } catch (err) {
             console.error(err);
-            setError("Gagal memuatkan nota. Sila cuba lagi.");
+            setError(t(lang, "history.errLoad"));
         } finally {
             setLoading(false);
         }
@@ -64,10 +64,10 @@ export default function History() {
         <div className="page">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
                 <div>
-                    <h1>📚 Sejarah Nota</h1>
-                    <p>Semua sesi pembelajaran yang telah disimpan.</p>
+                    <h1>{t(lang, "history.heading")}</h1>
+                    <p>{t(lang, "history.subtitle")}</p>
                 </div>
-                <Link to="/input" className="btn btn-primary">+ Sesi Baharu</Link>
+                <Link to="/input" className="btn btn-primary">{t(lang, "history.newSession")}</Link>
             </div>
 
             {error && (
@@ -76,7 +76,7 @@ export default function History() {
 
             <input
                 className="input"
-                placeholder="🔍 Cari nota..."
+                placeholder={t(lang, "history.searchPlaceholder")}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ marginBottom: "1.5rem" }}
@@ -89,23 +89,23 @@ export default function History() {
             ) : filtered.length === 0 ? (
                 <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📭</div>
-                    <h3>Tiada nota dijumpai</h3>
+                    <h3>{t(lang, "history.emptyHeading")}</h3>
                     <p style={{ marginTop: "0.5rem" }}>
-                        {search ? "Cuba carian lain." : "Mulakan sesi pembelajaran baharu untuk simpan nota pertama anda!"}
+                        {search ? t(lang, "history.emptySearch") : t(lang, "history.emptyDefault")}
                     </p>
                     {!search && (
                         <Link to="/input" className="btn btn-primary" style={{ marginTop: "1.5rem", display: "inline-flex" }}>
-                            🎙️ Mulakan Sekarang
+                            {t(lang, "history.emptyBtn")}
                         </Link>
                     )}
                 </div>
             ) : (
                 <div>
-                    <p style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>{filtered.length} nota dijumpai</p>
+                    <p style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>{t(lang, "history.resultCount", { n: filtered.length })}</p>
                     {filtered.map((note) => (
                         <div key={note.id} className="history-item">
                             <div>
-                                <div style={{ fontWeight: 600, color: "var(--text)" }}>📄 {note.tajuk || "Nota Tanpa Tajuk"}</div>
+                                <div style={{ fontWeight: 600, color: "var(--text)" }}>📄 {note.tajuk || t(lang, "history.untitled")}</div>
                                 <div className="history-meta">{formatDate(note.tarikhSimpan)}</div>
                             </div>
                             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -114,7 +114,7 @@ export default function History() {
                                     style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
                                     onClick={() => navigate(`/summary/${note.idRingkasan}`)}
                                 >
-                                    👁 Lihat
+                                    {t(lang, "history.viewBtn")}
                                 </button>
                                 <button
                                     className="btn btn-danger"
@@ -132,3 +132,4 @@ export default function History() {
         </div>
     );
 }
+

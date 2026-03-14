@@ -2,7 +2,9 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useTheme } from "../context/useTheme";
+import { useLanguage } from "../context/useLanguage";
 import { useState } from "react";
+import { t } from "../i18n/translations";
 
 const IconHome = () => (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -35,19 +37,20 @@ const IconLayers = () => (
     </svg>
 );
 
-const NAV_ITEMS = [
-    { to: "/app", end: true, label: "Utama", icon: <IconHome /> },
-    { to: "/input", label: "Input Audio", icon: <IconMic /> },
-    { to: "/history", label: "Sejarah", icon: <IconHistory /> },
-];
-
 export default function Sidebar({ user, isOpen, onClose }) {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
+    const { lang, toggleLang } = useLanguage();
     const [search, setSearch] = useState("");
 
+    const NAV_ITEMS = [
+        { to: "/app", end: true, label: t(lang, "nav.home"), icon: <IconHome /> },
+        { to: "/input", label: t(lang, "nav.audioInput"), icon: <IconMic /> },
+        { to: "/history", label: t(lang, "nav.history"), icon: <IconHistory /> },
+    ];
+
     const initial = user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "P";
-    const displayName = user?.displayName || user?.email?.split("@")[0] || "Pelajar";
+    const displayName = user?.displayName || user?.email?.split("@")[0] || t(lang, "dashboard.defaultName");
     const email = user?.email || "";
 
     const handleLogout = async () => {
@@ -58,7 +61,7 @@ export default function Sidebar({ user, isOpen, onClose }) {
     return (
         <aside className={`sidebar${isOpen ? " sidebar--open" : ""}`}>
             {/* Mobile close button */}
-            <button className="sidebar-close-btn" onClick={onClose} aria-label="Tutup menu">
+            <button className="sidebar-close-btn" onClick={onClose} aria-label={t(lang, "nav.closeMenu")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -75,7 +78,7 @@ export default function Sidebar({ user, isOpen, onClose }) {
                 <IconSearch />
                 <input
                     type="text"
-                    placeholder="Cari..."
+                    placeholder={t(lang, "nav.search")}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />
@@ -83,7 +86,7 @@ export default function Sidebar({ user, isOpen, onClose }) {
             </div>
 
             {/* Nav */}
-            <div className="sidebar-section-label">Menu Utama</div>
+            <div className="sidebar-section-label">{t(lang, "nav.mainMenu")}</div>
             <nav className="sidebar-nav">
                 {NAV_ITEMS.map(item => (
                     <NavLink
@@ -102,9 +105,9 @@ export default function Sidebar({ user, isOpen, onClose }) {
             {/* Bottom */}
             <div className="sidebar-bottom">
                 <div className="sidebar-upgrade-card">
-                    <div className="sidebar-upgrade-badge">⚡ 20 hari lagi</div>
-                    <p className="sidebar-upgrade-text">Naik taraf ke Premium dan nikmati lebih banyak ciri AI tanpa had.</p>
-                    <button className="sidebar-upgrade-btn">Lihat Pelan</button>
+                    <div className="sidebar-upgrade-badge">{t(lang, "nav.upgradeDays")}</div>
+                    <p className="sidebar-upgrade-text">{t(lang, "nav.upgradeText")}</p>
+                    <button className="sidebar-upgrade-btn">{t(lang, "nav.upgradeCta")}</button>
                 </div>
 
                 <div className="sidebar-user">
@@ -117,11 +120,18 @@ export default function Sidebar({ user, isOpen, onClose }) {
                         <button
                             onClick={toggleTheme}
                             className="sidebar-icon-btn"
-                            title={`Tukar ke mod ${theme === "dark" ? "terang" : "gelap"}`}
+                            title={t(lang, theme === "dark" ? "nav.themeTitle" : "nav.themeTitleLight")}
                         >
                             {theme === "dark" ? "☀️" : "🌙"}
                         </button>
-                        <button onClick={handleLogout} className="sidebar-icon-btn" title="Log keluar">
+                        <button
+                            onClick={toggleLang}
+                            className="sidebar-icon-btn"
+                            title={t(lang, "nav.langTitle")}
+                        >
+                            {lang === "ms" ? "🇬🇧" : "🇲🇾"}
+                        </button>
+                        <button onClick={handleLogout} className="sidebar-icon-btn" title={t(lang, "nav.logout")}>
                             <IconLogout />
                         </button>
                     </div>

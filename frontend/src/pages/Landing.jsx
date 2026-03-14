@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useTheme } from "../context/useTheme";
+import { useLanguage } from "../context/useLanguage";
+import { t } from "../i18n/translations";
 
 /* ─── SVG Icons ─────────────────────────────────────────────── */
 const IconLayers = () => (
@@ -49,78 +51,33 @@ const IconQuiz = () => (
     </svg>
 );
 
-/* ─── Data ──────────────────────────────────────────────────── */
-const FEATURES = [
-    {
-        icon: <IconMic />,
-        color: "#6C63FF",
-        title: "Transkripsi Audio Pintar",
-        desc: "Rakam kuliah atau muat naik fail audio — AI menukar ucapan kepada teks yang tepat dalam BM & Inggeris secara automatik."
-    },
-    {
-        icon: <IconSparkles />,
-        color: "#FF6584",
-        title: "Ringkasan Berkuasa AI",
-        desc: "Nota panjang diringkaskan kepada poin penting dalam masa beberapa saat. Fokus pada apa yang benar-benar penting."
-    },
-    {
-        icon: <IconBrain />,
-        color: "#43E8D8",
-        title: "Penjana Kuiz Adaptif",
-        desc: "Jana soalan MCQ berkaitan kuliah anda secara automatik. Uji pemahaman dan perkukuh ingatan dengan kuiz interaktif."
-    },
-    {
-        icon: <IconDoc />,
-        color: "#FFB74D",
-        title: "Sokongan PDF & Slaid",
-        desc: "Muat naik nota kuliah PDF atau slaid pembentangan untuk ditukar kepada ringkasan dan kuiz dengan serta-merta."
-    },
-    {
-        icon: <IconQuiz />,
-        color: "#4CAF75",
-        title: "Sejarah Pembelajaran",
-        desc: "Semua sesi disimpan dalam pustaka nota peribadi anda. Cari, imbas semula, dan teruskan pembelajaran bila-bila masa."
-    },
-    {
-        icon: <IconLayers />,
-        color: "#EC4899",
-        title: "Multi-Bahasa",
-        desc: "Sokong Bahasa Melayu dan Inggeris sepenuhnya. Model Gemini AI dioptimumkan khusus untuk konteks akademik tempatan."
-    }
-];
-
-const STEPS = [
-    {
-        num: "01",
-        title: "Rakam atau Muat Naik",
-        desc: "Rakam kuliah secara langsung melalui mikrofon atau muat naik fail audio/PDF yang sedia ada.",
-        color: "#6C63FF"
-    },
-    {
-        num: "02",
-        title: "AI Memproses Kandungan",
-        desc: "Gemini AI akan mentranskrip, meringkas, dan menjana kuiz daripada kandungan anda dalam beberapa saat.",
-        color: "#FF6584"
-    },
-    {
-        num: "03",
-        title: "Belajar dengan Lebih Berkesan",
-        desc: "Semak nota ringkas dan jawab kuiz interaktif untuk menguatkan pemahaman dan meningkatkan prestasi.",
-        color: "#43E8D8"
-    }
-];
-
-const PERKS = [
-    "Percuma untuk pelajar",
-    "Tanpa had muat naik",
-    "Simpan untuk selama-lamanya",
-    "Sokongan penuh BM & EN"
-];
-
 /* ─── Component ─────────────────────────────────────────────── */
 export default function Landing() {
     const { theme, toggleTheme } = useTheme();
+    const { lang } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const FEATURES = [
+        { icon: <IconMic />, color: "#6C63FF", title: t(lang, "landing.f1Title"), desc: t(lang, "landing.f1Desc") },
+        { icon: <IconSparkles />, color: "#FF6584", title: t(lang, "landing.f2Title"), desc: t(lang, "landing.f2Desc") },
+        { icon: <IconBrain />, color: "#43E8D8", title: t(lang, "landing.f3Title"), desc: t(lang, "landing.f3Desc") },
+        { icon: <IconDoc />, color: "#FFB74D", title: t(lang, "landing.f4Title"), desc: t(lang, "landing.f4Desc") },
+        { icon: <IconQuiz />, color: "#4CAF75", title: t(lang, "landing.f5Title"), desc: t(lang, "landing.f5Desc") },
+        { icon: <IconLayers />, color: "#EC4899", title: t(lang, "landing.f6Title"), desc: t(lang, "landing.f6Desc") },
+    ];
+
+    const STEPS = [
+        { num: "01", title: t(lang, "landing.s1Title"), desc: t(lang, "landing.s1Desc"), color: "#6C63FF" },
+        { num: "02", title: t(lang, "landing.s2Title"), desc: t(lang, "landing.s2Desc"), color: "#FF6584" },
+        { num: "03", title: t(lang, "landing.s3Title"), desc: t(lang, "landing.s3Desc"), color: "#43E8D8" },
+    ];
+
+    const PERKS = [
+        t(lang, "landing.perk1"),
+        t(lang, "landing.perk2"),
+        t(lang, "landing.perk3"),
+        t(lang, "landing.perk4"),
+    ];
 
     return (
         <div className="landing">
@@ -138,8 +95,8 @@ export default function Landing() {
                     </Link>
 
                     <nav className="landing-nav-links">
-                        <a href="#features" className="landing-nav-link">Ciri-ciri</a>
-                        <a href="#steps" className="landing-nav-link">Cara Guna</a>
+                        <a href="#features" className="landing-nav-link">{t(lang, "landing.navFeatures")}</a>
+                        <a href="#steps" className="landing-nav-link">{t(lang, "landing.navHowTo")}</a>
                     </nav>
 
                     <div className="landing-nav-cta">
@@ -151,10 +108,10 @@ export default function Landing() {
                             {theme === "dark" ? "☀️" : "🌙"}
                         </button>
                         <Link to="/login" className="btn btn-outline landing-nav-cta-hide-sm" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
-                            Log Masuk
+                            {t(lang, "landing.navLogin")}
                         </Link>
                         <Link to="/register" className="btn btn-primary landing-nav-cta-hide-sm" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
-                            Mulakan Percuma
+                            {t(lang, "landing.navRegister")}
                         </Link>
                         <button
                             className="landing-nav-hamburger"
@@ -176,11 +133,11 @@ export default function Landing() {
                 </div>
                 {mobileMenuOpen && (
                     <div className="landing-mobile-menu">
-                        <a href="#features" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Ciri-ciri</a>
-                        <a href="#steps" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Cara Guna</a>
+                        <a href="#features" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>{t(lang, "landing.mobileFeatures")}</a>
+                        <a href="#steps" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>{t(lang, "landing.mobileHowTo")}</a>
                         <div className="landing-mobile-menu-divider" />
-                        <Link to="/login" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Log Masuk</Link>
-                        <Link to="/register" className="landing-mobile-menu-cta" onClick={() => setMobileMenuOpen(false)}>Mulakan Percuma</Link>
+                        <Link to="/login" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>{t(lang, "landing.mobileLogin")}</Link>
+                        <Link to="/register" className="landing-mobile-menu-cta" onClick={() => setMobileMenuOpen(false)}>{t(lang, "landing.mobileRegister")}</Link>
                     </div>
                 )}
             </header>
@@ -190,26 +147,23 @@ export default function Landing() {
                 <div className="landing-hero-inner">
                     <div className="landing-badge">
                         <span className="landing-badge-dot" />
-                        Dikuasakan Gemini AI · Untuk Pelajar Malaysia
+                        {t(lang, "landing.badge")}
                     </div>
 
                     <h1 className="landing-headline">
-                        Tukar Kuliah Menjadi<br />
-                        <span className="landing-gradient-text">Nota Pintar Sekelip Mata</span>
+                        {t(lang, "landing.headline1")}<br />
+                        <span className="landing-gradient-text">{t(lang, "landing.headline2")}</span>
                     </h1>
 
-                    <p className="landing-subtext">
-                        Platform pembelajaran aktif yang mentranskrip audio kuliah, meringkaskan nota,
-                        dan menjana kuiz MCQ secara automatik menggunakan kecerdasan buatan.
-                    </p>
+                    <p className="landing-subtext">{t(lang, "landing.subtext")}</p>
 
                     <div className="landing-hero-btns">
                         <Link to="/register" className="btn btn-primary landing-btn-lg">
-                            Mulakan Percuma <IconArrow />
+                            {t(lang, "landing.heroCta")} <IconArrow />
                         </Link>
                         <a href="#steps" className="btn btn-ghost landing-btn-lg">
                             <span className="landing-play-icon"><IconPlay /></span>
-                            Lihat Cara Guna
+                            {t(lang, "landing.heroSecondary")}
                         </a>
                     </div>
 
@@ -265,13 +219,11 @@ export default function Landing() {
             {/* ── Features ── */}
             <section className="landing-section" id="features">
                 <div className="landing-section-inner">
-                    <div className="landing-section-badge">Semua Dalam Satu Platform</div>
+                    <div className="landing-section-badge">{t(lang, "landing.featuresBadge")}</div>
                     <h2 className="landing-section-title">
-                        Segala yang anda perlukan<br />untuk belajar lebih berkesan
+                        {t(lang, "landing.featuresTitle1")}<br />{t(lang, "landing.featuresTitle2")}
                     </h2>
-                    <p className="landing-section-sub">
-                        Dari audio kuliah hingga kuiz interaktif — DeepLearner menguruskan semuanya supaya anda boleh fokus kepada memahami, bukan mencatat.
-                    </p>
+                    <p className="landing-section-sub">{t(lang, "landing.featuresSub")}</p>
 
                     <div className="landing-feature-grid">
                         {FEATURES.map((f, i) => (
@@ -291,11 +243,9 @@ export default function Landing() {
             <section className="landing-section landing-steps-section" id="steps">
                 <div className="landing-orb landing-orb-4" />
                 <div className="landing-section-inner">
-                    <div className="landing-section-badge">Mudah &amp; Pantas</div>
-                    <h2 className="landing-section-title">Cara Guna DeepLearner</h2>
-                    <p className="landing-section-sub">
-                        Tiga langkah mudah untuk mengubah cara anda belajar.
-                    </p>
+                    <div className="landing-section-badge">{t(lang, "landing.stepsBadge")}</div>
+                    <h2 className="landing-section-title">{t(lang, "landing.stepsTitle")}</h2>
+                    <p className="landing-section-sub">{t(lang, "landing.stepsSub")}</p>
 
                     <div className="landing-steps-grid">
                         {STEPS.map((s, i) => (
@@ -319,21 +269,21 @@ export default function Landing() {
                     <div className="landing-cta-card">
                         <div className="landing-badge" style={{ marginBottom: "1.25rem" }}>
                             <span className="landing-badge-dot" />
-                            Sertai 500+ Pelajar Malaysia
+                            {t(lang, "landing.ctaBadge")}
                         </div>
                         <h2 className="landing-cta-title">
-                            Bersedia untuk belajar<br />
-                            <span className="landing-gradient-text">dengan cara lebih pintar?</span>
+                            {t(lang, "landing.ctaTitle1")}<br />
+                            <span className="landing-gradient-text">{t(lang, "landing.ctaTitle2")}</span>
                         </h2>
                         <p className="landing-cta-sub">
-                            Daftar percuma hari ini. Tiada kad kredit diperlukan.
+                            {t(lang, "landing.ctaSub")}
                         </p>
                         <div className="landing-cta-btns">
                             <Link to="/register" className="btn btn-primary landing-btn-lg">
-                                Daftar Percuma Sekarang <IconArrow />
+                                {t(lang, "landing.ctaRegister")} <IconArrow />
                             </Link>
                             <Link to="/login" className="btn btn-glass landing-btn-lg">
-                                Log Masuk
+                                {t(lang, "landing.ctaLogin")}
                             </Link>
                         </div>
                     </div>
@@ -349,11 +299,11 @@ export default function Landing() {
                             <span>DeepLearner</span>
                         </div>
                         <p className="landing-footer-copy">
-                            © 2026 DeepLearner. Dibina untuk pelajar Malaysia.
+                            {t(lang, "landing.footerCopy")}
                         </p>
                         <div className="landing-footer-links">
-                            <Link to="/login" className="landing-footer-link">Log Masuk</Link>
-                            <Link to="/register" className="landing-footer-link">Daftar</Link>
+                            <Link to="/login" className="landing-footer-link">{t(lang, "landing.footerLogin")}</Link>
+                            <Link to="/register" className="landing-footer-link">{t(lang, "landing.footerRegister")}</Link>
                         </div>
                     </div>
                 </div>

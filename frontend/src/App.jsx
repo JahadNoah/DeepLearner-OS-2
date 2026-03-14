@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { useTheme } from "./context/useTheme";
+import { useLanguage } from "./context/useLanguage";
+import { t } from "./i18n/translations";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -22,14 +24,15 @@ function ProtectedRoute({ children, user }) {
 
 function TopBar({ user, onMenuClick }) {
   const { theme, toggleTheme } = useTheme();
+  const { lang } = useLanguage();
   const location = useLocation();
   const name = user?.displayName || user?.email?.split("@")[0] || "Pelajar";
   const initial = user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "P";
 
   const PAGE_TITLES = {
-    "/app": "Papan Pemuka",
-    "/input": "Input Kandungan",
-    "/history": "Sejarah Nota",
+    "/app": t(lang, "topbar.dashboard"),
+    "/input": t(lang, "topbar.input"),
+    "/history": t(lang, "topbar.history"),
   };
   const title = PAGE_TITLES[location.pathname] ?? "DeepLearner";
 
