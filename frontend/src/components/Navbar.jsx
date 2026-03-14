@@ -41,7 +41,7 @@ const NAV_ITEMS = [
     { to: "/history", label: "Sejarah", icon: <IconHistory /> },
 ];
 
-export default function Sidebar({ user }) {
+export default function Sidebar({ user, isOpen, onClose }) {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const [search, setSearch] = useState("");
@@ -56,7 +56,14 @@ export default function Sidebar({ user }) {
     };
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar${isOpen ? " sidebar--open" : ""}`}>
+            {/* Mobile close button */}
+            <button className="sidebar-close-btn" onClick={onClose} aria-label="Tutup menu">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+
             {/* Logo */}
             <div className="sidebar-logo">
                 <div className="sidebar-logo-icon"><IconLayers /></div>
@@ -84,6 +91,7 @@ export default function Sidebar({ user }) {
                         to={item.to}
                         end={item.end}
                         className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`}
+                        onClick={onClose}
                     >
                         <span className="sidebar-nav-icon">{item.icon}</span>
                         <span>{item.label}</span>

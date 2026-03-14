@@ -20,7 +20,7 @@ function ProtectedRoute({ children, user }) {
   return user ? children : <Navigate to="/" replace />;
 }
 
-function TopBar({ user }) {
+function TopBar({ user, onMenuClick }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const name = user?.displayName || user?.email?.split("@")[0] || "Pelajar";
@@ -35,7 +35,14 @@ function TopBar({ user }) {
 
   return (
     <div className="main-topbar">
-      <span className="topbar-title">{title}</span>
+      <div className="topbar-left">
+        <button className="topbar-menu-btn" onClick={onMenuClick} aria-label="Toggle menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <span className="topbar-title">{title}</span>
+      </div>
       <div className="topbar-right">
         <button
           className="topbar-icon-btn"
@@ -57,11 +64,16 @@ function TopBar({ user }) {
 }
 
 function AppLayout({ user, children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="app-layout">
-      <Sidebar user={user} />
+      <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div
+        className={`sidebar-overlay${sidebarOpen ? " active" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
       <div className="main-wrapper">
-        <TopBar user={user} />
+        <TopBar user={user} onMenuClick={() => setSidebarOpen(o => !o)} />
         <div className="main-content">
           {children}
         </div>

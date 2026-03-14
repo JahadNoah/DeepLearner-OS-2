@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { useTheme } from "../context/useTheme";
 
 /* ─── SVG Icons ─────────────────────────────────────────────── */
@@ -119,6 +120,7 @@ const PERKS = [
 /* ─── Component ─────────────────────────────────────────────── */
 export default function Landing() {
     const { theme, toggleTheme } = useTheme();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
         <div className="landing">
@@ -148,14 +150,39 @@ export default function Landing() {
                         >
                             {theme === "dark" ? "☀️" : "🌙"}
                         </button>
-                        <Link to="/login" className="btn btn-outline" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
+                        <Link to="/login" className="btn btn-outline landing-nav-cta-hide-sm" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
                             Log Masuk
                         </Link>
-                        <Link to="/register" className="btn btn-primary" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
+                        <Link to="/register" className="btn btn-primary landing-nav-cta-hide-sm" style={{ fontSize: "0.85rem", padding: "0.45rem 1.1rem" }}>
                             Mulakan Percuma
                         </Link>
+                        <button
+                            className="landing-nav-hamburger"
+                            onClick={() => setMobileMenuOpen(o => !o)}
+                            aria-label="Toggle menu"
+                            aria-expanded={mobileMenuOpen}
+                        >
+                            {mobileMenuOpen ? (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            ) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
                 </div>
+                {mobileMenuOpen && (
+                    <div className="landing-mobile-menu">
+                        <a href="#features" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Ciri-ciri</a>
+                        <a href="#steps" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Cara Guna</a>
+                        <div className="landing-mobile-menu-divider" />
+                        <Link to="/login" className="landing-mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Log Masuk</Link>
+                        <Link to="/register" className="landing-mobile-menu-cta" onClick={() => setMobileMenuOpen(false)}>Mulakan Percuma</Link>
+                    </div>
+                )}
             </header>
 
             {/* ── Hero ── */}
