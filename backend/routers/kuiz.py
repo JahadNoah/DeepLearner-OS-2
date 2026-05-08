@@ -3,6 +3,7 @@ Kuiz Router
   POST /api/generate-quiz            — text-only (from a saved summary)
   POST /api/generate-quiz-multimodal — text / image / text+image upload
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from typing import Optional
 from pydantic import BaseModel
@@ -39,11 +40,18 @@ async def create_quiz(req: QuizRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Teks ringkasan kosong")
 
     try:
-        questions = generate_quiz(summary_text, num_questions=req.num_questions)
+        questions = await asyncio.to_thread(generate_quiz, summary_text, req.num_questions)
         if not questions:
             raise HTTPException(status_code=422, detail="Tidak cukup kandungan untuk menjana kuiz")
 
+        batch = db.batch()
         saved_questions = []
+        needs_enrichment = any(
+            not q.get("penjelasan", "").strip() or
+            "Jawapan betul ialah" in q.get("penjelasan", "") or
+            "The correct answer is" in q.get("penjelasan", "")
+            for q in questions
+        )
         for q in questions:
             doc_ref = db.collection("kuiz").document()
             doc_data = {
@@ -54,16 +62,13 @@ async def create_quiz(req: QuizRequest, background_tasks: BackgroundTasks):
                 "pilihanJawapan": q["pilihanJawapan"],
                 "jawapanBetul": q["jawapanBetul"],
                 "penjelasan": q.get("penjelasan", ""),
+                "status": "enriching" if needs_enrichment else "ready",
                 "tarikhCipta": datetime.utcnow(),
             }
-            doc_ref.set(doc_data)
+            batch.set(doc_ref, doc_data)
             saved_questions.append(doc_data)
+        batch.commit()
 
-        # Return immediately — enrichment runs in the background
-        needs_enrichment = any(not q.get("penjelasan", "").strip() or
-                               "Jawapan betul ialah" in q.get("penjelasan", "") or
-                               "The correct answer is" in q.get("penjelasan", "")
-                               for q in saved_questions)
         if needs_enrichment:
             background_tasks.add_task(enrich_and_save, saved_questions, summary_text)
 
@@ -75,6 +80,20 @@ async def create_quiz(req: QuizRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ─── Endpoint: Quiz enrichment status ───────────────────────────────────────
+@router.get("/quiz-status/{idRingkasan}")
+async def quiz_status(idRingkasan: str):
+    """Returns whether all quiz explanations for a summary are ready."""
+    db = get_firestore()
+    docs = db.collection("kuiz").where("idRingkasan", "==", idRingkasan).stream()
+    items = [d.to_dict() for d in docs]
+    if not items:
+        return {"status": "not_found", "count": 0}
+    # Treat missing "status" field (legacy docs) as "ready"
+    all_ready = all(q.get("status", "ready") == "ready" for q in items)
+    return {"status": "ready" if all_ready else "enriching", "count": len(items)}
+
+
 # ─── Endpoint 2: Multimodal quiz (text and/or image upload) ─────────────────
 @router.post("/generate-quiz-multimodal")
 async def create_quiz_multimodal(
@@ -82,6 +101,7 @@ async def create_quiz_multimodal(
     num_questions: int = Form(5),
     teks: Optional[str] = Form(None),
     imej: Optional[UploadFile] = File(None),
+    idRingkasan: Optional[str] = Form(None),
 ):
     """
     Multimodal quiz generation endpoint.
@@ -111,11 +131,9 @@ async def create_quiz_multimodal(
         image_mime = imej.content_type
 
     try:
-        questions = generate_multimodal_quiz(
-            text=teks or "",
-            image_bytes=image_bytes,
-            image_mime_type=image_mime,
-            num_questions=num_questions,
+        questions = await asyncio.to_thread(
+            generate_multimodal_quiz,
+            teks or "", image_bytes, image_mime, num_questions,
         )
 
         if not questions:
@@ -125,11 +143,13 @@ async def create_quiz_multimodal(
             )
 
         db = get_firestore()
+        batch = db.batch()
         saved_questions = []
         for q in questions:
             doc_ref = db.collection("kuiz").document()
             doc_data = {
                 "idKuiz": doc_ref.id,
+                "idRingkasan": idRingkasan or "",
                 "noMatrik": noMatrik,
                 "soalan": q["soalan"],
                 "pilihanJawapan": q["pilihanJawapan"],
@@ -138,8 +158,9 @@ async def create_quiz_multimodal(
                 "sumberInput": "multimodal",
                 "tarikhCipta": datetime.utcnow(),
             }
-            doc_ref.set(doc_data)
+            batch.set(doc_ref, doc_data)
             saved_questions.append(doc_data)
+        batch.commit()
 
         return {"soalanKuiz": saved_questions}
 

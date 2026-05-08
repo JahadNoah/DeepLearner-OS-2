@@ -1,142 +1,240 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
-import { useTheme } from "../context/useTheme";
 import { useLanguage } from "../context/useLanguage";
-import { useState } from "react";
 import { t } from "../i18n/translations";
-
-const IconHome = () => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-);
-const IconMic = () => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
-    </svg>
-);
-const IconHistory = () => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-);
-const IconLogout = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-);
-const IconSearch = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-);
-const IconLayers = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
-    </svg>
-);
+import {
+    LayoutDashboard, Mic, History, LogOut,
+    Layers, X, Languages,
+} from "lucide-react";
 
 export default function Sidebar({ user, isOpen, onClose }) {
+    const [desktopOpen, setDesktopOpen] = useState(false);
     const navigate = useNavigate();
-    const { theme, toggleTheme } = useTheme();
     const { lang, toggleLang } = useLanguage();
-    const [search, setSearch] = useState("");
 
-    const NAV_ITEMS = [
-        { to: "/app", end: true, label: t(lang, "nav.home"), icon: <IconHome /> },
-        { to: "/input", label: t(lang, "nav.audioInput"), icon: <IconMic /> },
-        { to: "/history", label: t(lang, "nav.history"), icon: <IconHistory /> },
-    ];
-
-    const initial = user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "P";
     const displayName = user?.displayName || user?.email?.split("@")[0] || t(lang, "dashboard.defaultName");
     const email = user?.email || "";
+    const initial = displayName.charAt(0).toUpperCase();
+
+    const NAV_ITEMS = [
+        { to: "/app",     end: true,  labelKey: "nav.home",       icon: <LayoutDashboard size={18} /> },
+        { to: "/input",               labelKey: "nav.audioInput", icon: <Mic size={18} /> },
+        { to: "/history",             labelKey: "nav.history",    icon: <History size={18} /> },
+    ];
 
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/login");
     };
 
-    return (
-        <aside className={`sidebar${isOpen ? " sidebar--open" : ""}`}>
-            {/* Mobile close button */}
-            <button className="sidebar-close-btn" onClick={onClose} aria-label={t(lang, "nav.closeMenu")}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+    // ── Shared nav items ─────────────────────────────────────
+    const NavItems = ({ showLabels, onItemClick }) => (
+        <nav className="sidebar-v2-nav">
+            {NAV_ITEMS.map(item => (
+                <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) => `sidebar-v2-link${isActive ? " active" : ""}`}
+                    onClick={onItemClick}
+                >
+                    <span className="sidebar-v2-link-icon">{item.icon}</span>
+                    {showLabels && (
+                        <span className="sidebar-v2-link-label">{t(lang, item.labelKey)}</span>
+                    )}
+                </NavLink>
+            ))}
+        </nav>
+    );
+
+    // ── Bottom actions ────────────────────────────────────────
+    const BottomActions = ({ showLabels, onItemClick }) => (
+        <div className="sidebar-v2-bottom">
+            <button className="sidebar-v2-link" onClick={toggleLang} title={t(lang, "nav.langTitle")}>
+                <span className="sidebar-v2-link-icon"><Languages size={17} /></span>
+                {showLabels && (
+                    <span className="sidebar-v2-link-label">
+                        {lang === "ms" ? "English" : "Bahasa Melayu"}
+                    </span>
+                )}
+            </button>
+            <button className="sidebar-v2-link sidebar-v2-logout" onClick={handleLogout} title={t(lang, "nav.logout")}>
+                <span className="sidebar-v2-link-icon"><LogOut size={17} /></span>
+                {showLabels && (
+                    <span className="sidebar-v2-link-label">{t(lang, "nav.logout")}</span>
+                )}
             </button>
 
-            {/* Logo */}
-            <div className="sidebar-logo">
-                <div className="sidebar-logo-icon"><IconLayers /></div>
-                <span>DeepLearner</span>
+            <div className="sidebar-v2-user">
+                <div className="sidebar-v2-avatar">{initial}</div>
+                {showLabels && (
+                    <div className="sidebar-v2-user-info">
+                        <div className="sidebar-v2-user-name">{displayName}</div>
+                        <div className="sidebar-v2-user-email">{email}</div>
+                    </div>
+                )}
             </div>
+        </div>
+    );
 
-            {/* Search */}
-            <div className="sidebar-search">
-                <IconSearch />
-                <input
-                    type="text"
-                    placeholder={t(lang, "nav.search")}
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
-                <span className="sidebar-search-hint">⌘ K</span>
-            </div>
-
-            {/* Nav */}
-            <div className="sidebar-section-label">{t(lang, "nav.mainMenu")}</div>
-            <nav className="sidebar-nav">
-                {NAV_ITEMS.map(item => (
-                    <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.end}
-                        className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`}
-                        onClick={onClose}
+    return (
+        <>
+            {/* ══════════════════════════════════════
+                DESKTOP — hover-to-expand sidebar
+            ══════════════════════════════════════ */}
+            <motion.aside
+                className="sidebar-v2"
+                initial={false}
+                animate={{ width: desktopOpen ? 228 : 64 }}
+                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                onMouseEnter={() => setDesktopOpen(true)}
+                onMouseLeave={() => setDesktopOpen(false)}
+            >
+                {/* Logo */}
+                <div className="sidebar-v2-logo">
+                    <img src="/DeepLearnerLogo1.png" alt="DeepLearner" className="w-[24px] h-[24px] object-contain flex-shrink-0" />
+                    <motion.span
+                        className="sidebar-v2-logo-label"
+                        style={{ marginLeft: '4px' }}
+                        animate={{ opacity: desktopOpen ? 1 : 0 }}
+                        transition={{ duration: desktopOpen ? 0.18 : 0.08 }}
                     >
-                        <span className="sidebar-nav-icon">{item.icon}</span>
-                        <span>{item.label}</span>
-                    </NavLink>
-                ))}
-            </nav>
-
-            {/* Bottom */}
-            <div className="sidebar-bottom">
-                <div className="sidebar-upgrade-card">
-                    <div className="sidebar-upgrade-badge">{t(lang, "nav.upgradeDays")}</div>
-                    <p className="sidebar-upgrade-text">{t(lang, "nav.upgradeText")}</p>
-                    <button className="sidebar-upgrade-btn">{t(lang, "nav.upgradeCta")}</button>
+                        DeepLearner
+                    </motion.span>
                 </div>
 
-                <div className="sidebar-user">
-                    <div className="sidebar-avatar">{initial}</div>
-                    <div className="sidebar-user-info">
-                        <div className="sidebar-user-name">{displayName}</div>
-                        <div className="sidebar-user-email">{email}</div>
-                    </div>
-                    <div className="sidebar-user-actions">
-                        <button
-                            onClick={toggleTheme}
-                            className="sidebar-icon-btn"
-                            title={t(lang, theme === "dark" ? "nav.themeTitle" : "nav.themeTitleLight")}
+                {/* Nav (icons always visible; labels fade when open) */}
+                <nav className="sidebar-v2-nav">
+                    {NAV_ITEMS.map(item => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            className={({ isActive }) => `sidebar-v2-link${isActive ? " active" : ""}`}
                         >
-                            {theme === "dark" ? "☀️" : "🌙"}
-                        </button>
-                        <button
-                            onClick={toggleLang}
-                            className="sidebar-icon-btn"
-                            title={t(lang, "nav.langTitle")}
+                            <span className="sidebar-v2-link-icon">{item.icon}</span>
+                            <motion.span
+                                className="sidebar-v2-link-label"
+                                animate={{ opacity: desktopOpen ? 1 : 0 }}
+                                transition={{ duration: desktopOpen ? 0.18 : 0.08 }}
+                            >
+                                {t(lang, item.labelKey)}
+                            </motion.span>
+                        </NavLink>
+                    ))}
+                </nav>
+
+                {/* Bottom */}
+                <div className="sidebar-v2-bottom">
+                    <button
+                        className="sidebar-v2-link"
+                        onClick={toggleLang}
+                        title={t(lang, "nav.langTitle")}
+                    >
+                        <span className="sidebar-v2-link-icon"><Languages size={17} /></span>
+                        <motion.span
+                            className="sidebar-v2-link-label"
+                            animate={{ opacity: desktopOpen ? 1 : 0 }}
+                            transition={{ duration: desktopOpen ? 0.18 : 0.08 }}
                         >
-                            {lang === "ms" ? "🇬🇧" : "🇲🇾"}
-                        </button>
-                        <button onClick={handleLogout} className="sidebar-icon-btn" title={t(lang, "nav.logout")}>
-                            <IconLogout />
-                        </button>
+                            {lang === "ms" ? "English" : "Bahasa Melayu"}
+                        </motion.span>
+                    </button>
+
+                    <button
+                        className="sidebar-v2-link sidebar-v2-logout"
+                        onClick={handleLogout}
+                        title={t(lang, "nav.logout")}
+                    >
+                        <span className="sidebar-v2-link-icon"><LogOut size={17} /></span>
+                        <motion.span
+                            className="sidebar-v2-link-label"
+                            animate={{ opacity: desktopOpen ? 1 : 0 }}
+                            transition={{ duration: desktopOpen ? 0.18 : 0.08 }}
+                        >
+                            {t(lang, "nav.logout")}
+                        </motion.span>
+                    </button>
+
+                    <div className="sidebar-v2-user">
+                        <div className="sidebar-v2-avatar">{initial}</div>
+                        <motion.div
+                            className="sidebar-v2-user-info"
+                            animate={{ opacity: desktopOpen ? 1 : 0 }}
+                            transition={{ duration: desktopOpen ? 0.18 : 0.08 }}
+                        >
+                            <div className="sidebar-v2-user-name">{displayName}</div>
+                            <div className="sidebar-v2-user-email">{email}</div>
+                        </motion.div>
                     </div>
                 </div>
-            </div>
-        </aside>
+            </motion.aside>
+
+            {/* ══════════════════════════════════════
+                MOBILE — full-panel overlay
+            ══════════════════════════════════════ */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.aside
+                        className="sidebar-v2-mobile"
+                        initial={{ x: "-100%" }}
+                        animate={{ x: 0 }}
+                        exit={{ x: "-100%" }}
+                        transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                        {/* Header */}
+                        <div className="sidebar-v2-mobile-header">
+                            <div className="sidebar-v2-logo" style={{ border: "none", padding: 0 }}>
+                                <img src="/DeepLearnerLogo1.png" alt="DeepLearner" className="w-[24px] h-[24px] object-contain flex-shrink-0" />
+                                <span className="sidebar-v2-logo-label" style={{ marginLeft: '4px' }}>DeepLearner</span>
+                            </div>
+                            <button className="sidebar-v2-close" onClick={onClose} aria-label="Close">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Nav */}
+                        <nav className="sidebar-v2-nav" style={{ padding: "1rem 0.75rem" }}>
+                            {NAV_ITEMS.map(item => (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    end={item.end}
+                                    className={({ isActive }) => `sidebar-v2-link${isActive ? " active" : ""}`}
+                                    onClick={onClose}
+                                >
+                                    <span className="sidebar-v2-link-icon">{item.icon}</span>
+                                    <span className="sidebar-v2-link-label">{t(lang, item.labelKey)}</span>
+                                </NavLink>
+                            ))}
+                        </nav>
+
+                        {/* Bottom */}
+                        <div className="sidebar-v2-bottom">
+                            <button className="sidebar-v2-link" onClick={() => { toggleLang(); onClose(); }}>
+                                <span className="sidebar-v2-link-icon"><Languages size={17} /></span>
+                                <span className="sidebar-v2-link-label">
+                                    {lang === "ms" ? "English" : "Bahasa Melayu"}
+                                </span>
+                            </button>
+                            <button className="sidebar-v2-link sidebar-v2-logout" onClick={handleLogout}>
+                                <span className="sidebar-v2-link-icon"><LogOut size={17} /></span>
+                                <span className="sidebar-v2-link-label">{t(lang, "nav.logout")}</span>
+                            </button>
+                            <div className="sidebar-v2-user">
+                                <div className="sidebar-v2-avatar">{initial}</div>
+                                <div className="sidebar-v2-user-info">
+                                    <div className="sidebar-v2-user-name">{displayName}</div>
+                                    <div className="sidebar-v2-user-email">{email}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
+        </>
     );
 }

@@ -2,12 +2,15 @@
 DeepLearner OS — FastAPI Backend Entry Point
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import transkripsi, ringkasan, kuiz, nota, dokumen
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from routers import transkripsi, ringkasan, kuiz, nota, dokumen, progress
 
 app = FastAPI(
     title="DeepLearner OS API",
@@ -32,7 +35,43 @@ app.include_router(ringkasan.router, prefix="/api", tags=["Ringkasan"])
 app.include_router(kuiz.router, prefix="/api", tags=["Kuiz"])
 app.include_router(nota.router, prefix="/api", tags=["Nota"])
 app.include_router(dokumen.router, prefix="/api", tags=["Dokumen PDF"])
+app.include_router(progress.router, prefix="/api", tags=["Progress"])
 
-@app.get("/")
-def root():
-    return {"message": "DeepLearner OS API is running 🚀"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/health/ollama")
+def health_ollama():
+    """Shows which Ollama endpoint is active and whether the model is loaded."""
+    from services.ollama_client import get_ollama_host, probe_model, OLLAMA_MODEL, _TUNNEL_HOST, _LOCAL_HOST
+    host = get_ollama_host()
+    if not host:
+        return {"status": "offline", "tunnel": _TUNNEL_HOST, "local": _LOCAL_HOST, "model": OLLAMA_MODEL}
+    model_loaded = probe_model(host, OLLAMA_MODEL)
+    label = "tunnel" if host == _TUNNEL_HOST else "local"
+    return {
+        "status": "ready" if model_loaded else "reachable_no_model",
+        "active": label,
+        "host": host,
+        "model": OLLAMA_MODEL,
+        "model_loaded": model_loaded,
+    }
+
+# ── Serve built React frontend (only if dist/ exists) ────────────────────────
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_react(full_path: str):
+        """Catch-all: return index.html so React Router handles routing."""
+        index = FRONTEND_DIST / "index.html"
+        return FileResponse(index)
+else:
+    @app.get("/")
+    def root():
+        return {"message": "DeepLearner OS API is running 🚀 (run 'npm run build' in frontend/ to serve the UI)"}
+

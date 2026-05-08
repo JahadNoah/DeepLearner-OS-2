@@ -7,6 +7,10 @@ export function ThemeProvider({ children }) {
         return localStorage.getItem("deeplearner-theme") || "dark";
     });
 
+    const [videoMode, setVideoMode] = useState(() => {
+        return localStorage.getItem("deeplearner-video-mode") || "static";
+    });
+
     useEffect(() => {
         localStorage.setItem("deeplearner-theme", theme);
         const root = document.documentElement;
@@ -17,10 +21,15 @@ export function ThemeProvider({ children }) {
         }
     }, [theme]);
 
+    useEffect(() => {
+        localStorage.setItem("deeplearner-video-mode", videoMode);
+    }, [videoMode]);
+
     const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+    const toggleVideoMode = () => setVideoMode((v) => (v === "static" ? "video" : "static"));
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, videoMode, toggleVideoMode }}>
             {children}
         </ThemeContext.Provider>
     );

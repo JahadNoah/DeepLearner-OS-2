@@ -1,11 +1,15 @@
 """
 Ringkasan Router — POST /api/summarize
 Takes a transcript ID, summarizes it, saves result to Firestore.
+Supports optional SSE progress via job_id field.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from firebase_config import get_firestore
 from services.summarizer import summarize_text
+from routers.progress import emit, emit_done, emit_error
 from datetime import datetime
 
 router = APIRouter()
@@ -16,6 +20,7 @@ class SummarizeRequest(BaseModel):
     noMatrik: str
     max_length: int = 300
     min_length: int = 80
+    job_id: Optional[str] = None
 
 
 @router.post("/summarize")
@@ -37,12 +42,24 @@ async def summarize(req: SummarizeRequest):
     if not transcript_text:
         raise HTTPException(status_code=400, detail="Teks transkripsi kosong")
 
+    if len(transcript_text) > 50_000:
+        raise HTTPException(status_code=400, detail="TRANSCRIPT_TOO_LONG")
+
+    async def _emit(event: str, data: dict):
+        if req.job_id:
+            await emit(req.job_id, event, data)
+
     try:
-        summary = summarize_text(
+        await _emit("progress", {"step": "summarising", "label": "AI sedang meringkaskan..."})
+
+        summary = await asyncio.to_thread(
+            summarize_text,
             transcript_text,
-            max_length=req.max_length,
-            min_length=req.min_length
+            req.max_length,
+            req.min_length,
         )
+
+        await _emit("progress", {"step": "saving", "label": "Menyimpan ringkasan..."})
 
         # Save to Firestore
         doc_ref = db.collection("ringkasan").document()
@@ -55,6 +72,9 @@ async def summarize(req: SummarizeRequest):
         }
         doc_ref.set(doc_data)
 
+        if req.job_id:
+            await emit_done(req.job_id)
+
         return {
             "idRingkasan": doc_ref.id,
             "teksRingkasan": summary,
@@ -62,6 +82,11 @@ async def summarize(req: SummarizeRequest):
         }
 
     except Exception as e:
+        if req.job_id:
+            await emit_error(req.job_id, str(e))
+        msg = str(e).lower()
+        if any(k in msg for k in ("connection", "timeout", "unavailable", "refused")):
+            raise HTTPException(status_code=503, detail="AI_SERVICE_UNAVAILABLE")
         raise HTTPException(status_code=500, detail=str(e))
 
 

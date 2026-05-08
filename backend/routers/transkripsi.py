@@ -1,11 +1,13 @@
 """
 Transkripsi Router — POST /api/transcribe
 Accepts an audio file, runs Whisper, saves result to Firestore.
+Supports optional SSE progress via job_id form field.
 """
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from firebase_config import get_firestore, get_bucket
 from services.whisper_service import transcribe_audio
 from services.transcript_cleaner import clean_transcript
+from routers.progress import emit, emit_done, emit_error
 import tempfile
 import os
 import uuid
@@ -18,7 +20,8 @@ router = APIRouter()
 async def transcribe(
     audio: UploadFile = File(...),
     noMatrik: str = Form(...),
-    language: str = Form(default=None)  # "ms" | "en" | None for auto-detect
+    language: str = Form(default=None),  # "ms" | "en" | None for auto-detect
+    job_id: str = Form(default=None),    # optional SSE job ID
 ):
     """
     Upload an audio file to transcribe.
@@ -31,11 +34,21 @@ async def transcribe(
         tmp.write(content)
         tmp_path = tmp.name
 
+    async def _emit(event: str, data: dict):
+        if job_id:
+            await emit(job_id, event, data)
+
     try:
+        await _emit("progress", {"step": "transcribing", "label": "Mentranskrip audio..."})
+
         # Run Whisper transcription
         result = transcribe_audio(tmp_path, language=language if language else None)
+
+        await _emit("progress", {"step": "cleaning", "label": "Membersihkan teks..."})
         transcript_text = clean_transcript(result["text"])  # Ollama cleans noise/fillers
         detected_lang = result["language"]
+
+        await _emit("progress", {"step": "saving", "label": "Menyimpan transkripsi..."})
 
         # Upload audio to Firebase Storage (optional — continues if Storage not set up)
         audio_url = ""
@@ -62,6 +75,9 @@ async def transcribe(
         }
         doc_ref.set(doc_data)
 
+        if job_id:
+            await emit_done(job_id)
+
         return {
             "IDtranskripsi": doc_ref.id,
             "teksPenuh": transcript_text,
@@ -70,6 +86,15 @@ async def transcribe(
         }
 
     except Exception as e:
+        if job_id:
+            await emit_error(job_id, str(e))
+        msg = str(e).lower()
+        if any(k in msg for k in ("duration", "too long", "exceeds", "terlalu panjang")):
+            raise HTTPException(status_code=422, detail="AUDIO_TOO_LONG")
+        if any(k in msg for k in ("format", "codec", "invalid", "unsupported", "decode")):
+            raise HTTPException(status_code=415, detail="AUDIO_FORMAT_INVALID")
+        if any(k in msg for k in ("connection", "timeout", "unavailable", "refused")):
+            raise HTTPException(status_code=503, detail="AI_SERVICE_UNAVAILABLE")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         os.unlink(tmp_path)

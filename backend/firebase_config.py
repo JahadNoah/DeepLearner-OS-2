@@ -4,7 +4,7 @@ Place your serviceAccountKey.json in the backend/ directory.
 Download it from: Firebase Console → Project Settings → Service Accounts → Generate new private key
 """
 import firebase_admin
-from firebase_admin import credentials, firestore, storage
+from firebase_admin import credentials
 import os
 from dotenv import load_dotenv
 
@@ -24,9 +24,11 @@ def get_firebase_app():
     return _app
 
 def get_firestore():
+    from firebase_admin import firestore
     get_firebase_app()
     return firestore.client()
 
 def get_bucket():
+    from firebase_admin import storage
     get_firebase_app()
     return storage.bucket()

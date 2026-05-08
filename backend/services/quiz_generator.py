@@ -4,19 +4,11 @@ Generates higher-order MCQ questions from summary text.
 
 Three generation strategies:
   A. NLP-Enhanced (spaCy + heuristics) — always available, no API key needed.
-     • Entity-type-aware distractors  (PERSON vs PERSON, ORG vs ORG, etc.)
-     • Smart True/False  — 50 % of T/F questions present a deliberately
-       mutated (false) sentence so "Salah/False" is a genuine possibility.
-     • Bilingual negation patterns for Bahasa Melayu and English.
+  B. Google Gemini (free tier) — Bloom's-Taxonomy-level questions via Gemini 1.5 Flash.
+  C. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
 
-  B. LLM-Powered (OpenAI GPT-4o-mini) — conceptual, Bloom's-Taxonomy-level
-     questions generated directly from the summary text.
-     Requires OPENAI_API_KEY in .env.
-
-  C. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen2.5:8b).
-     Requires Ollama running on OLLAMA_HOST (default: http://localhost:11434).
-
-generate_quiz() priority: OpenAI (B) → Ollama (C) → NLP (A).
+generate_quiz() priority: Gemini (B) → NLP (A).
+Ollama is used only for background explanation enrichment.
 """
 import os
 import re
@@ -25,31 +17,27 @@ import random
 from typing import List, Optional, Dict
 from dotenv import load_dotenv
 
+from services.text_utils import detect_language
+
 load_dotenv()
 
-# ─── Optional spaCy import ────────────────────────────────────────────────
-try:
-    import spacy
-    _NLP_EN = spacy.load("en_core_web_sm")
-    _SPACY_AVAILABLE = True
-except Exception:
-    _SPACY_AVAILABLE = False
-    _NLP_EN = None
+# spaCy is fully lazy — imported only when first needed, never at module load.
+_NLP_EN = None
+_SPACY_CHECKED = False
 
 
-# ─── Language Detection ───────────────────────────────────────────────────
-_MALAY_MARKERS = {
-    "yang", "dan", "atau", "pada", "di", "ke", "dari", "dengan", "untuk",
-    "adalah", "ini", "itu", "juga", "oleh", "dalam", "tidak", "akan",
-    "telah", "boleh", "lebih", "seperti", "apabila", "jika", "semua",
-    "setiap", "antara", "iaitu", "kerana", "namun", "walau", "tetapi",
-}
-
-
-def detect_language(text: str) -> str:
-    """Returns 'ms' for Malay or 'en' for English based on marker word count."""
-    words = set(re.findall(r'\b\w+\b', text.lower()))
-    return "ms" if len(words & _MALAY_MARKERS) >= 3 else "en"
+def _get_nlp():
+    """Import spaCy and load en_core_web_sm on first call; returns None if unavailable."""
+    global _NLP_EN, _SPACY_CHECKED
+    if _SPACY_CHECKED:
+        return _NLP_EN
+    _SPACY_CHECKED = True
+    try:
+        import spacy
+        _NLP_EN = spacy.load("en_core_web_sm")
+    except (ImportError, OSError):
+        _NLP_EN = None
+    return _NLP_EN
 
 
 # ─── Text Helpers ─────────────────────────────────────────────────────────
@@ -156,9 +144,10 @@ STOP_WORDS = {
 # ─── A1: Keyword / Entity Extraction ──────────────────────────────────────
 def _extract_nouns_spacy(sentence: str) -> List[str]:
     """Return NOUN/PROPN tokens via spaCy POS tagging (English)."""
-    if not _SPACY_AVAILABLE:
+    nlp = _get_nlp()
+    if not nlp:
         return []
-    doc = _NLP_EN(sentence)
+    doc = nlp(sentence)
     return [
         token.text for token in doc
         if token.pos_ in ("NOUN", "PROPN") and not token.is_stop and len(token.text) > 3
@@ -193,9 +182,10 @@ def _extract_entity_map(text: str) -> Dict[str, List[str]]:
     E.g. {"PERSON": ["Ahmad", "Siti"], "ORG": ["UTM", "MARA"]}
     Returns an empty dict when spaCy is unavailable.
     """
-    if not _SPACY_AVAILABLE:
+    nlp = _get_nlp()
+    if not nlp:
         return {}
-    doc = _NLP_EN(text[:10_000])
+    doc = nlp(text[:10_000])
     entity_map: Dict[str, List[str]] = {}
     for ent in doc.ents:
         entity_map.setdefault(ent.label_, []).append(ent.text)
@@ -536,9 +526,9 @@ def generate_quiz_nlp(summary_text: str, num_questions: int = 5) -> List[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# SOLUTION B — LLM-Powered (OpenAI GPT-4o-mini)
+# STRATEGY B — Google Gemini (free tier)
 # ═══════════════════════════════════════════════════════════════════════════
-_OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
+_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 
 _SYSTEM_PROMPT = """You are an expert educational assessment designer specialising in Bloom's Taxonomy.
 Generate Multiple Choice Questions that test conceptual understanding, application, and analysis —
@@ -556,16 +546,32 @@ Rules:
 """
 
 
-def _validate_llm_response(data: object) -> List[dict]:
-    """Validate and sanitize LLM output against the expected question schema."""
-    if isinstance(data, dict):
-        for key in ("questions", "quiz", "mcq", "items", "data"):
-            if key in data and isinstance(data[key], list):
-                data = data[key]
-                break
-        else:
-            data = list(data.values())[0] if data else []
+def _extract_json_array(raw: str) -> list:
+    """Extract a JSON array from LLM output that may contain markdown fences or wrapper objects."""
+    raw = re.sub(r"```(?:json)?\s*", "", raw).strip().strip("`").strip()
+    # Try direct parse first
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return parsed
+        if isinstance(parsed, dict):
+            for key in ("questions", "quiz", "mcq", "items", "data"):
+                if key in parsed and isinstance(parsed[key], list):
+                    return parsed[key]
+            vals = list(parsed.values())
+            if vals and isinstance(vals[0], list):
+                return vals[0]
+    except json.JSONDecodeError:
+        pass
+    # Fallback: find JSON array via regex
+    match = re.search(r"\[.*\]", raw, re.DOTALL)
+    if match:
+        return json.loads(match.group())
+    return []
 
+
+def _validate_llm_response(data: list) -> List[dict]:
+    """Validate and sanitize LLM output against the expected question schema."""
     if not isinstance(data, list):
         return []
 
@@ -582,44 +588,44 @@ def _validate_llm_response(data: object) -> List[dict]:
     return valid
 
 
-def generate_quiz_llm(summary_text: str, num_questions: int = 5) -> List[dict]:
+def generate_quiz_gemini(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
-    Strategy B: LLM-powered question generation via OpenAI API.
+    Strategy B: Gemini-powered question generation (free tier).
     Produces higher-order thinking questions (Bloom's Taxonomy levels 2-4).
-    Requires OPENAI_API_KEY in .env.  Returns [] on any failure.
+    Uses GEMINI_API_KEY in .env.  Returns [] on any failure.
     """
-    if not _OPENAI_KEY:
+    if not _GEMINI_KEY:
         return []
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=_OPENAI_KEY)
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=_GEMINI_KEY)
         lang = detect_language(summary_text)
         lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
 
         user_prompt = (
             f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
             f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
-            f"Summary:\n{summary_text[:3000]}\n\n"
-            f"Return a JSON array: "
+            f"Summary:\n{summary_text[:5000]}\n\n"
+            f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
             f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
         )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": user_prompt},
-            ],
-            temperature=0.7,
-            max_tokens=2000,
-            response_format={"type": "json_object"},
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=f"{_SYSTEM_PROMPT}\n\n{user_prompt}",
+            config=types.GenerateContentConfig(
+                temperature=0.6,
+                max_output_tokens=2048,
+            ),
         )
 
-        parsed = json.loads(response.choices[0].message.content)
+        parsed = _extract_json_array(response.text)
         questions = _validate_llm_response(parsed)
         return questions[:num_questions]
 
-    except Exception:
+    except Exception as e:
+        print(f"Gemini quiz generator failed: {e}")
         return []
 
 
@@ -628,15 +634,15 @@ def generate_quiz_llm(summary_text: str, num_questions: int = 5) -> List[dict]:
 # ═══════════════════════════════════════════════════════════════════════════
 def generate_quiz_ollama(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
-    Strategy C: Ollama/Qwen local LLM question generation.
-    Uses OLLAMA_MODEL (default: qwen2.5:8b) via local Ollama server.
+    Strategy C: Ollama/Qwen LLM question generation.
+    Auto-switches between tunnel and local Ollama.
     Returns [] on failure or if Ollama is offline.
     """
-    ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:8b")
     try:
-        import ollama as _ollama
-        client = _ollama.Client(host=ollama_host)
+        from services.ollama_client import get_ollama_client, invalidate_cache
+        client, model = get_ollama_client()
+        if not client:
+            return []
         lang = detect_language(summary_text)
         lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
         user_prompt = (
@@ -647,7 +653,7 @@ def generate_quiz_ollama(summary_text: str, num_questions: int = 5) -> List[dict
             f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
         )
         response = client.chat(
-            model=ollama_model,
+            model=model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user",   "content": user_prompt},
@@ -655,16 +661,11 @@ def generate_quiz_ollama(summary_text: str, num_questions: int = 5) -> List[dict
             options={"temperature": 0.5, "num_predict": 2000},
         )
         raw = response["message"]["content"]
-        # Strip markdown fences if present
-        raw = re.sub(r"```(?:json)?\s*", "", raw).strip().strip("`").strip()
-        # Find JSON array
-        match = re.search(r"\[.*\]", raw, re.DOTALL)
-        if not match:
-            return []
-        parsed = json.loads(match.group())
+        parsed = _extract_json_array(raw)
         return _validate_llm_response(parsed)[:num_questions]
     except Exception as e:
         print(f"Ollama quiz generator failed: {e}")
+        invalidate_cache()
         return []
 
 
@@ -718,52 +719,50 @@ def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]
 
     raw = ""
 
-    # ── Try Ollama first (local, fast) ──
+    # ── Try Ollama first (auto-switches tunnel/local) ──
     try:
-        import ollama as _ollama
-        ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-        ollama_model = os.getenv("OLLAMA_MODEL", "qwen3:8b")
-        client = _ollama.Client(host=ollama_host)
-        resp = client.chat(
-            model=ollama_model,
-            messages=[
-                {"role": "system", "content": _EXPLAIN_SYSTEM},
-                {"role": "user",   "content": user_prompt},
-            ],
-            options={"temperature": 0.3, "num_predict": 1500},
-        )
-        raw = resp["message"]["content"].strip()
-    except Exception as e:
-        print(f"Ollama explanation enrichment failed: {e}")
-
-    # ── Fall back to OpenAI ──
-    if not raw and _OPENAI_KEY:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=_OPENAI_KEY)
-            resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+        from services.ollama_client import get_ollama_client, invalidate_cache
+        client, model = get_ollama_client()
+        if client:
+            resp = client.chat(
+                model=model,
                 messages=[
                     {"role": "system", "content": _EXPLAIN_SYSTEM},
                     {"role": "user",   "content": user_prompt},
                 ],
-                temperature=0.3,
-                max_tokens=1200,
+                options={"temperature": 0.3, "num_predict": 1500},
             )
-            raw = resp.choices[0].message.content.strip()
+            raw = resp["message"]["content"].strip()
+    except Exception as e:
+        print(f"Ollama explanation enrichment failed: {e}")
+        invalidate_cache()
+
+    # ── Fall back to Gemini ──
+    if not raw and _GEMINI_KEY:
+        try:
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=_GEMINI_KEY)
+            resp = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=f"{_EXPLAIN_SYSTEM}\n\n{user_prompt}",
+                config=types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=1500,
+                ),
+            )
+            raw = resp.text.strip()
         except Exception as e:
-            print(f"OpenAI explanation enrichment failed: {e}")
+            print(f"Gemini explanation enrichment failed: {e}")
 
     if not raw:
         return questions  # keep original template explanations
 
     # ── Parse and merge enriched explanations ──
     try:
-        raw = re.sub(r"```(?:json)?\s*", "", raw).strip().strip("`")
-        match = re.search(r"\[.*\]", raw, re.DOTALL)
-        if not match:
+        enriched = _extract_json_array(raw)
+        if not enriched:
             return questions
-        enriched = json.loads(match.group())
         enriched_map = {
             item["index"]: item["penjelasan"]
             for item in enriched
@@ -786,20 +785,33 @@ def enrich_and_save(questions_with_ids: list, summary_text: str) -> None:
     Background-safe function: enriches NLP template explanations via LLM
     and updates each question doc in Firestore.
     Call this from a FastAPI BackgroundTask — never block the response on it.
+    Always marks docs as "ready" when finished (even if enrichment failed).
     """
+    from firebase_config import get_firestore
+    db = get_firestore()
     try:
-        from firebase_config import get_firestore
         # Extract just the question dicts for enrichment
         questions = [{k: v for k, v in q.items() if k != "idKuiz"} for q in questions_with_ids]
         enriched = _enrich_explanations(questions, summary_text)
-        db = get_firestore()
         for original, eq in zip(questions_with_ids, enriched):
             id_kuiz = original.get("idKuiz")
+            if not id_kuiz:
+                continue
+            update = {"status": "ready"}
             new_penjelasan = eq.get("penjelasan", "")
-            if id_kuiz and new_penjelasan and new_penjelasan != original.get("penjelasan", ""):
-                db.collection("kuiz").document(id_kuiz).update({"penjelasan": new_penjelasan})
+            if new_penjelasan and new_penjelasan != original.get("penjelasan", ""):
+                update["penjelasan"] = new_penjelasan
+            db.collection("kuiz").document(id_kuiz).update(update)
     except Exception as e:
         print(f"Background enrichment failed: {e}")
+        # Ensure all docs are marked ready so frontend doesn't poll forever
+        for q in questions_with_ids:
+            id_kuiz = q.get("idKuiz")
+            if id_kuiz:
+                try:
+                    db.collection("kuiz").document(id_kuiz).update({"status": "ready"})
+                except Exception:
+                    pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -809,7 +821,7 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
     Generates MCQ quiz questions from a summary text.
 
-    Priority: Strategy B (OpenAI) → Strategy A (NLP).
+    Priority: Strategy B (Gemini) → Strategy A (NLP).
     Ollama is intentionally excluded from this blocking path — it runs in the
     background via enrich_and_save() to improve explanations after the response
     is returned to the client.
@@ -821,8 +833,8 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     Returns:
         List of dicts with keys: soalan, pilihanJawapan, jawapanBetul, penjelasan
     """
-    # Strategy B — OpenAI (fast, high-quality HOT questions)
-    questions = generate_quiz_llm(summary_text, num_questions)
+    # Strategy B — Gemini (fast, high-quality HOT questions)
+    questions = generate_quiz_gemini(summary_text, num_questions)
     if len(questions) >= num_questions:
         return questions
 
@@ -830,5 +842,5 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     remaining = num_questions - len(questions)
     nlp_questions = generate_quiz_nlp(summary_text, remaining)
 
-    # Return immediately — Ollama enrichment happens in the background via enrich_and_save()
+    # Return immediately — enrichment happens in the background via enrich_and_save()
     return (questions + nlp_questions)[:num_questions]

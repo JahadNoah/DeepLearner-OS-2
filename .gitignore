@@ -13,10 +13,14 @@ serviceAccountKey.json
 cloudflared.pkg
 
 # Node
-frontend/node_modules/
+node_modules/
 frontend/node_modules.zip
 frontend/dist/
 frontend/.env.local
+
+# IDE
+.vscode/
+.idea/
 
 # OS
 .DS_Store

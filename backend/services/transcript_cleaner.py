@@ -1,28 +1,19 @@
 """
 Transcript Cleaner — DeepLearner v2
-Cleans raw Whisper transcripts using a local Qwen model via Ollama.
+Cleans raw Whisper transcripts using a Qwen model via Ollama.
 
 Removes filler words, stutters, false starts, and fixes punctuation/grammar
 while strictly preserving the speaker's original meaning and language
 (Bahasa Melayu or English — including code-switching).
 
-Requires Ollama running locally:
-  brew install ollama
-  ollama pull qwen2.5:8b
-  ollama serve          # starts automatically on macOS after install
+Auto-switches between tunnel (remote server) and local Ollama.
 
 Config via .env:
-  OLLAMA_MODEL=qwen2.5:8b       (default)
-  OLLAMA_HOST=http://localhost:11434  (default)
+  OLLAMA_TUNNEL=https://ollama.warisanqna.uk  (remote)
+  OLLAMA_LOCAL=http://localhost:11434           (local fallback)
+  OLLAMA_MODEL=qwen2.5:7b
 """
-import os
 import re
-from dotenv import load_dotenv
-
-load_dotenv()
-
-_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
-_OLLAMA_HOST  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
 
 # ─── System Prompt ──────────────────────────────────────────────────────────
 _SYSTEM_PROMPT = """\
@@ -64,20 +55,23 @@ def clean_transcript(raw_text: str) -> str:
         return raw_text
 
     try:
-        import ollama
+        from services.ollama_client import get_ollama_client, invalidate_cache
 
-        client = ollama.Client(host=_OLLAMA_HOST)
+        client, model = get_ollama_client()
+        if not client:
+            print("[transcript_cleaner] Ollama unreachable — using light normalize.")
+            return _light_normalize(raw_text)
 
         response = client.chat(
-            model=_OLLAMA_MODEL,
+            model=model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user",   "content": raw_text.strip()},
             ],
             options={
-                "temperature":    0.1,   # strict formatting — no creative output
-                "repeat_penalty": 1.1,   # penalise transcript-style repetition
-                "num_predict":    4096,  # enough tokens for a full lecture
+                "temperature":    0.1,
+                "repeat_penalty": 1.1,
+                "num_predict":    4096,
             },
         )
 
@@ -94,9 +88,8 @@ def clean_transcript(raw_text: str) -> str:
         return _light_normalize(raw_text)
 
     except Exception as e:
-        # Covers: Ollama not running, model not pulled, timeout, etc.
-        print(f"[transcript_cleaner] Ollama unavailable ({type(e).__name__}: {e}) "
-              "— using raw text.")
+        print(f"[transcript_cleaner] Ollama failed ({type(e).__name__}: {e}) — using raw text.")
+        invalidate_cache()
         return _light_normalize(raw_text)
 
 

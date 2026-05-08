@@ -8,159 +8,21 @@ Strict filtering rules applied to all strategies:
 
 Three strategies:
   A. Extractive (fast, no API key needed) — noise-filtered, structured Markdown.
-  B. LLM-Powered (OpenAI GPT-4o-mini) — conceptual, Bloom's-ready.
-     Requires OPENAI_API_KEY in .env.
-  D. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen2.5:8b).
+  D. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
      Requires Ollama running on OLLAMA_HOST (default: http://localhost:11434).
+  E. Google Gemini (free tier) — gemini-1.5-flash via GEMINI_API_KEY in .env.
 
-summarize_text() priority: OpenAI → Ollama → T5 → Extractive.
-Optional: set USE_AI_SUMMARIZER=true in .env to use T5-small instead of OpenAI.
+summarize_text() priority: Gemini → Ollama → T5 → Extractive.
 """
 import os
 import re
 from dotenv import load_dotenv
 
+from services.text_utils import detect_language, clean_text
+
 load_dotenv()
 
 _t5_summarizer = None
-
-# ─── Language Detection ─────────────────────────────────────────────────────
-_MALAY_MARKERS = {
-    "yang", "dan", "atau", "pada", "di", "ke", "dari", "dengan", "untuk",
-    "adalah", "ini", "itu", "juga", "oleh", "dalam", "tidak", "akan",
-    "telah", "boleh", "lebih", "seperti", "apabila", "jika", "semua",
-    "setiap", "antara", "iaitu", "kerana", "namun", "walau", "tetapi",
-}
-
-
-def _detect_language(text: str) -> str:
-    """Returns 'ms' for Malay or 'en' for English."""
-    words = set(re.findall(r'\b\w+\b', text.lower()))
-    return "ms" if len(words & _MALAY_MARKERS) >= 3 else "en"
-
-
-# ─── Deep Text Cleaner ──────────────────────────────────────────────────────
-# Regex patterns for noise removal
-_NOISE_PATTERNS = [
-    r"\[Halaman \d+\]",                         # page markers  [Halaman 3]
-    r"Halaman\s+\d+\s*(daripada\s*\d+)?",       # Halaman 1 daripada 5
-    r"\b\d{1,2}/\d{1,2}/\d{2,4},?\s*\d{1,2}:\d{2}\s*(AM|PM|am|pm)?\b",  # timestamps 3/9/26, 2:14 PM
-    r"https?://\S+",                            # URLs
-    r"www\.\S+",                                # www. links
-    r"©\s*\d{4}[^\n]*",                        # copyright © 2026 …
-    r"All\s+Rights\s+Reserved[^\n]*",              # standalone copyright footer
-    r"\bBack\b|\bNext\b|\bHome\b|\bMenu\b",    # nav buttons
-    r"\bMuat\s*turun\b|\bCetak\b|\bKongsi\b",  # Malay nav/UI labels
-    r"[-–—]{3,}",                               # horizontal rules
-    r"\bPage \d+\b|\bSlide \d+\b",             # English page/slide markers
-]
-_NOISE_RE = re.compile("|".join(_NOISE_PATTERNS), re.IGNORECASE)
-
-
-# ─── Heading Line & Duplicate Filter ────────────────────────────────────────
-_HEADING_LINE_RE = re.compile(
-    r'^\s*(?:'
-    r'\d+(?:\.\d+)*[\s\.]'   # numbered sections: "7.3 " "1.1." "1. "
-    r'|\d+/\d+'              # fraction-prefixed lines: "1/2 Topic", "2/2"
-    r')',
-    re.IGNORECASE,
-)
-
-_HEADING_VERB_RE = re.compile(
-    r'\b(?:adalah|ialah|merupakan|bermaksud|dilaksanakan|diumumkan|'
-    r'terdiri|dijawat|diwujudkan|berlaku|berkhidmat|bertanggungjawab|'
-    r'is|are|was|were|has|have|had|can|will|should|provide|refer|define)\b',
-    re.IGNORECASE,
-)
-
-# Matches image/infographic alt-text descriptions — not actual subject content
-_IMAGE_DESC_RE = re.compile(
-    r'imej\s+ini\s+(?:menunjukkan|memaparkan|menggambarkan|merupakan)|'
-    r'ilustrasi\s+(?:seorang|sebuah|ini)|'
-    r'infografik\s+(?:tentang|mengenai|ini)|'
-    r'di\s+sudut\s+(?:kiri|kanan)\s+(?:atas|bawah)|'
-    r"logo\s+['\"]\w[^'\"]*['\"]",
-    re.IGNORECASE,
-)
-
-
-def _rejoin_pdf_wraps(text: str) -> str:
-    """
-    Rejoin soft-wrapped lines from PDF/web-page extraction.
-    When a line ends without terminal punctuation (.!?:) and the next
-    line starts with a lowercase letter, they are joined — restoring
-    full paragraphs so image alt-text blocks can be detected and filtered.
-    """
-    lines = text.split('\n')
-    out: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            out.append('')
-            continue
-        if out and out[-1] and not re.search(r'[.!?:]\s*$', out[-1]) and stripped[0].islower():
-            out[-1] = out[-1] + ' ' + stripped
-        else:
-            out.append(stripped)
-    return '\n'.join(out)
-
-
-def _strip_heading_lines(text: str) -> str:
-    """
-    Pre-process transcript text line-by-line to remove structural noise:
-    - Numbered section headings  (e.g. "7.3 Sistem Ahli")
-    - Fraction-prefixed lines    (e.g. "1/2 Sistem Ahli")
-    - Standalone / trailing slide fractions (e.g. "2/2", "Topik 2/2")
-    - Short unpunctuated noun-phrase lines that are headings (≤10 words, no verb)
-    - Consecutive duplicate lines
-    """
-    kept = []
-    seen: set = set()
-
-    for raw_line in text.split('\n'):
-        line = raw_line.strip()
-        if not line:
-            kept.append('')
-            continue
-
-        # Strip trailing slide fraction (e.g. "Sistem Ahli 1/2")
-        line = re.sub(r'\s+\d+/\d+\s*$', '', line).strip()
-        if not line:
-            continue
-
-        # Skip numbered sections and fraction-prefixed lines
-        if _HEADING_LINE_RE.match(line):
-            continue
-
-        # Skip image/infographic alt-text description lines
-        if _IMAGE_DESC_RE.search(line):
-            continue
-
-        # Deduplicate (normalise whitespace and case for comparison)
-        norm = re.sub(r'\s+', ' ', line).lower()
-        if norm in seen:
-            continue
-        seen.add(norm)
-
-        # Short unpunctuated phrases without verbs are headings → skip
-        has_terminal      = bool(re.search(r'[.!?]$', line))
-        has_internal_punct = bool(re.search(r'[,;]', line))
-        has_verb          = bool(_HEADING_VERB_RE.search(line))
-        if not has_terminal and not has_internal_punct and not has_verb and len(line.split()) <= 10:
-            continue
-
-        kept.append(line)
-
-    return '\n'.join(kept)
-
-
-def _clean_text(text: str) -> str:
-    """Strip structural headings and noise from transcript text."""
-    text = _rejoin_pdf_wraps(text)
-    text = _strip_heading_lines(text)
-    cleaned = _NOISE_RE.sub(" ", text)
-    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
-    return cleaned
 
 
 # ─── Sentence Splitting & Scoring ───────────────────────────────────────────
@@ -212,7 +74,6 @@ def _detect_sub_bullets(sentences: list[str]) -> list[str | list[str]]:
     while i < len(sentences):
         s = sentences[i]
         if _SUBCONCEPT_RE.match(s) and i + 1 < len(sentences):
-            # Collect short follow-up sentences as sub-bullets
             sub: list[str] = []
             j = i + 1
             while j < len(sentences) and j < i + 5 and len(sentences[j].split()) <= 15:
@@ -239,8 +100,6 @@ _CONCLUSION_SKIP_RE = re.compile(
 def _pick_conclusion(sentences: list[str]) -> str:
     """
     Select a meaningful closing sentence from the bottom third.
-    Avoids procedure-list headers ("Langkah-langkah..."), bare noun
-    phrases, and lines ending with ":".
     Falls back to the last sentence.
     """
     n = len(sentences)
@@ -257,20 +116,17 @@ def _pick_conclusion(sentences: list[str]) -> str:
 # ═══════════════════════════════════════════════════════════════════════════
 # STRATEGY A — Extractive Summarizer
 # ═══════════════════════════════════════════════════════════════════════════
-def extractive_summarize(text: str, max_sentences: int = 8) -> str:
+def extractive_summarize(text: str, lang: str, cleaned: str, max_sentences: int = 8) -> str:
     """
     Filters noise, scores sentences, and formats a structured Markdown summary:
     TITLE → PENGENALAN → POIN UTAMA (with optional nested bullets) → KESIMPULAN.
     No AI model required — works instantly.
     """
-    lang = _detect_language(text)
-    cleaned = _clean_text(text)
     sentences = _split_sentences(cleaned)
 
     if not sentences:
         return cleaned[:1000]
 
-    # ── Labels (bilingual) ──
     lbl_title     = "Ringkasan"
     lbl_intro     = "**Pengenalan:**" if lang == "ms" else "**Introduction:**"
     lbl_points    = "**Poin Utama:**" if lang == "ms" else "**Key Points:**"
@@ -289,7 +145,6 @@ def extractive_summarize(text: str, max_sentences: int = 8) -> str:
     top = sorted(scored[:bullet_count], key=lambda x: x[1])
     bullet_sentences = [s for _, _, s in top if s != last]
 
-    # ── Group nested sub-bullets ──
     grouped = _detect_sub_bullets(bullet_sentences)
 
     lines = [f"## {lbl_title}\n", lbl_intro, intro, "", lbl_points]
@@ -307,9 +162,9 @@ def extractive_summarize(text: str, max_sentences: int = 8) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY B — LLM-Powered (OpenAI GPT-4o-mini)
+# STRATEGY E — Google Gemini (free tier)
 # ═══════════════════════════════════════════════════════════════════════════
-_OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
+_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 
 _SYSTEM_PROMPT = """\
 You are an expert Educational Content Processor for the DeepLearner system.
@@ -343,60 +198,63 @@ REQUIRED OUTPUT FORMAT (Markdown only, no extra commentary):
 """
 
 
-def summarize_text_llm(text: str) -> str:
+def summarize_text_gemini(lang: str, cleaned: str) -> str:
     """
-    Strategy B: LLM-powered summarization via OpenAI API.
+    Strategy E: Gemini-powered summarization (free tier).
+    Uses gemini-2.0-flash via GEMINI_API_KEY in .env.
     Returns empty string on any failure or missing key.
     """
-    if not _OPENAI_KEY:
+    if not _GEMINI_KEY:
         return ""
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=_OPENAI_KEY)
-        lang = _detect_language(text)
-        lang_note = "The input is in Bahasa Melayu. All output MUST be in Bahasa Melayu." \
-            if lang == "ms" else "The input is in English."
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": f"{lang_note}\n\nTranscript:\n{_clean_text(text)[:6000]}"},
-            ],
-            temperature=0.4,
-            max_tokens=1200,
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=_GEMINI_KEY)
+        lang_note = (
+            "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
+            if lang == "ms"
+            else "The input is in English."
         )
-        return response.choices[0].message.content.strip()
+        prompt = f"{_SYSTEM_PROMPT}\n\n{lang_note}\n\nTranscript:\n{cleaned[:5000]}"
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=1200,
+            ),
+        )
+        result = response.text.strip()
+        return result if len(result) > 50 else ""
     except Exception as e:
-        print(f"LLM summarizer failed: {e}")
+        print(f"Gemini summarizer failed: {e}")
         return ""
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STRATEGY D — Ollama/Qwen (local LLM)
 # ═══════════════════════════════════════════════════════════════════════════
-def summarize_text_ollama(text: str) -> str:
+def summarize_text_ollama(lang: str, cleaned: str) -> str:
     """
-    Strategy D: Ollama/Qwen local LLM summarization.
-    Uses OLLAMA_MODEL (default: qwen2.5:8b) via local Ollama server.
+    Strategy D: Ollama/Qwen LLM summarization.
+    Auto-switches between tunnel and local Ollama.
     Returns empty string on failure or if Ollama is offline.
     """
-    ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "qwen3:8b")
     try:
-        import ollama as _ollama
-        client = _ollama.Client(host=ollama_host)
-        lang = _detect_language(text)
+        from services.ollama_client import get_ollama_client, invalidate_cache
+        client, model = get_ollama_client()
+        if not client:
+            return ""
         lang_note = (
             "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
             if lang == "ms"
             else "The input is in English."
         )
         response = client.chat(
-            model=ollama_model,
+            model=model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": f"{lang_note}\n\nTranscript:\n{_clean_text(text)[:5000]}"},
+                {"role": "user",   "content": f"{lang_note}\n\nTranscript:\n{cleaned[:5000]}"},
             ],
             options={"temperature": 0.2, "num_predict": 1200},
         )
@@ -404,6 +262,7 @@ def summarize_text_ollama(text: str) -> str:
         return result if len(result) > 50 else ""
     except Exception as e:
         print(f"Ollama summarizer failed: {e}")
+        invalidate_cache()
         return ""
 
 
@@ -421,7 +280,7 @@ def _get_t5_summarizer():
     return _t5_summarizer
 
 
-def summarize_text_t5(text: str, max_length: int = 300, min_length: int = 80) -> str:
+def summarize_text_t5(text: str, lang: str, max_length: int = 300, min_length: int = 80) -> str:
     """Strategy C: T5-small transformer summarization (USE_AI_SUMMARIZER=true)."""
     try:
         summarizer = _get_t5_summarizer()
@@ -434,7 +293,6 @@ def summarize_text_t5(text: str, max_length: int = 300, min_length: int = 80) ->
         else:
             raw = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)[0]["summary_text"]
 
-        lang = _detect_language(text)
         lbl_intro    = "**Pengenalan:**" if lang == "ms" else "**Introduction:**"
         lbl_points   = "**Poin Utama:**" if lang == "ms" else "**Key Points:**"
         lbl_conclude = "**Kesimpulan:**" if lang == "ms" else "**Conclusion:**"
@@ -463,29 +321,35 @@ def summarize_text(text: str, max_length: int = 300, min_length: int = 80) -> st
     """
     Summarizes the given text with noise filtering and structured Markdown output.
 
+    Language detection and text cleaning are computed once and reused across all strategies.
+
     Priority:
-      1. Strategy B (OpenAI) — if OPENAI_API_KEY is set in .env
+      1. Strategy E (Gemini) — if GEMINI_API_KEY is set in .env
       2. Strategy D (Ollama/Qwen) — if Ollama is running locally
       3. Strategy C (T5-small) — if USE_AI_SUMMARIZER=true in .env
       4. Strategy A (Extractive) — always available fallback
     """
+    # Compute once, reuse across all strategies
+    lang = detect_language(text)
+    cleaned = clean_text(text)
+
     use_t5 = os.getenv("USE_AI_SUMMARIZER", "false").lower() == "true"
 
-    # Strategy B — OpenAI LLM
-    result = summarize_text_llm(text)
+    # Strategy E — Gemini (free)
+    result = summarize_text_gemini(lang, cleaned)
     if result:
         return result
 
     # Strategy D — Ollama/Qwen
-    result = summarize_text_ollama(text)
+    result = summarize_text_ollama(lang, cleaned)
     if result:
         return result
 
     # Strategy C — T5
     if use_t5:
-        result = summarize_text_t5(text, max_length, min_length)
+        result = summarize_text_t5(text, lang, max_length, min_length)
         if result:
             return result
 
     # Strategy A — Extractive (guaranteed fallback)
-    return extractive_summarize(text, max_sentences=10)
+    return extractive_summarize(text, lang, cleaned, max_sentences=10)

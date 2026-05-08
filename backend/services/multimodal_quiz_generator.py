@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_GEMINI_KEY = os.getenv("gen-lang-client-0229853464", "")
+_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # ─── System Prompt ──────────────────────────────────────────────────────────
 _SYSTEM_PROMPT = """\
@@ -199,33 +199,32 @@ def generate_multimodal_quiz(
     # ── Strategy: Gemini 1.5 Flash (VLM) ────────────────────────────────
     if _GEMINI_KEY:
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
 
-            genai.configure(api_key=_GEMINI_KEY)
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=_SYSTEM_PROMPT,
-            )
+            client = genai.Client(api_key=_GEMINI_KEY)
 
             # Build content parts list
             parts: list = []
 
             if image_bytes:
-                parts.append({
-                    "inline_data": {
-                        "mime_type": image_mime_type or "image/jpeg",
-                        "data": base64.b64encode(image_bytes).decode("utf-8"),
-                    }
-                })
+                parts.append(types.Part(
+                    inline_data=types.Blob(
+                        mime_type=image_mime_type or "image/jpeg",
+                        data=image_bytes,
+                    )
+                ))
 
             parts.append(_build_user_prompt(text, num_questions, has_image=bool(image_bytes)))
 
-            response = model.generate_content(
-                parts,
-                generation_config={
-                    "temperature": 0.6,
-                    "max_output_tokens": 2048,
-                },
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[types.Content(role="user", parts=parts)],
+                config=types.GenerateContentConfig(
+                    system_instruction=_SYSTEM_PROMPT,
+                    temperature=0.6,
+                    max_output_tokens=2048,
+                ),
             )
 
             questions = _extract_json(response.text)

@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepLearner OS – Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+  ============================================================ */
+  :root {
+    --amber:       #B85C00;
+    --amber-dark:  #8B4300;
+    --amber-light: #D97706;
+    --amber-glow:  rgba(184,92,0,0.18);
+    --bg:          rgba(244, 241, 236, 0.65);
+    --surface:     rgba(255, 255, 255, 0.5);
+    --surface2:    rgba(238, 235, 229, 0.5);
+    --border:      rgba(224, 221, 214, 0.5);
+    --text:        #1A1714;
+    --text-2:      #5C5650;
+    --text-3:      #9E988F;
+    --sidebar-w:   220px;
+    --topbar-h:    60px;
+    --radius:      14px;
+    --shadow:      0 2px 16px rgba(0,0,0,0.07);
+    --shadow-lg:   0 8px 40px rgba(0,0,0,0.12);
+    --font:        'Sora', sans-serif;
+    --font-body:   'DM Sans', sans-serif;
+    --transition:  0.22s cubic-bezier(.4,0,.2,1);
+    --glass-blur:  blur(16px);
+  }
+  .theme-dark {
+    --bg:        rgba(20, 18, 16, 0.75);
+    --surface:   rgba(30, 27, 24, 0.65);
+    --surface2:  rgba(40, 36, 32, 0.5);
+    --border:    rgba(46, 42, 38, 0.5);
+    --text:      #F0EDE8;
+    --text-2:    #A89E94;
+    --text-3:    #6B625A;
+    --shadow:    0 2px 16px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  /* ============================================================
+     RESET & BASE
+  ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: var(--font-body); background: var(--bg); color: var(--text); transition: background var(--transition), color var(--transition); }
+  button { cursor: pointer; border: none; outline: none; font-family: var(--font-body); background: transparent; }
+  input, textarea { outline: none; border: none; font-family: var(--font-body); background: transparent; }
+
+  #bg-video {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    object-fit: cover; z-index: -10;
+    transition: opacity 0.5s ease;
+  }
+  body.static-mode #bg-video { opacity: 0; pointer-events: none; }
+
+  /* ============================================================
+     SCREEN SWITCHER (top nav tabs)
+  ============================================================ */
+  #screen-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    display: flex; align-items: center; gap: 4px;
+    background: #000; padding: 8px 12px; overflow-x: auto;
+  }
+  #screen-nav span { color: #888; font-size: 11px; font-family: monospace; margin-right: 6px; white-space: nowrap; }
+  .snav-btn {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-family: monospace;
+    background: #222; color: #aaa; border: 1px solid #333; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .snav-btn:hover { background: #333; color: #fff; }
+  .snav-btn.active { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+  /* ============================================================
+     SHELL
+  ============================================================ */
+  .shell {
+    display: none; flex-direction: row;
+    height: 100vh; padding-top: 38px; /* offset for screen-nav */
+    overflow: hidden;
+  }
+  .shell.visible { display: flex; }
+
+  /* ============================================================
+     SIDEBAR
+  ============================================================ */
+  .sidebar {
+    width: var(--sidebar-w); min-width: var(--sidebar-w);
+    background: var(--surface); border-right: 1px solid var(--border);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    display: flex; flex-direction: column; padding: 0 0 20px;
+    transition: background var(--transition);
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .brand { font-family: var(--font); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); }
+  .sidebar-logo .sub { font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+  .sidebar-logo .avatar-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .sidebar-logo .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .sidebar-logo .av-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .sidebar-logo .av-role { font-size: 10px; color: var(--text-3); }
+
+  .nav-section { padding: 12px 12px 0; }
+  .nav-section-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); padding: 0 8px; margin-bottom: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 10px; margin-bottom: 2px;
+    font-size: 13px; font-weight: 500; color: var(--text-2);
+    cursor: pointer; transition: all var(--transition); text-decoration: none;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--amber-glow); color: var(--amber); font-weight: 600; }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .sidebar-cta {
+    margin: auto 16px 0;
+    padding: 11px 16px; border-radius: 12px;
+    background: var(--amber); color: #fff;
+    font-size: 13px; font-weight: 600; font-family: var(--font);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background var(--transition);
+  }
+  .sidebar-cta:hover { background: var(--amber-dark); }
+
+  /* ============================================================
+     TOPBAR
+  ============================================================ */
+  .topbar {
+    height: var(--topbar-h); display: flex; align-items: center;
+    padding: 0 24px; gap: 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface); transition: background var(--transition);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    flex-shrink: 0;
+  }
+  .topbar-brand { font-family: var(--font); font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
+  .topbar-search {
+    flex: 1; max-width: 380px; display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0 12px; height: 36px;
+  }
+  .topbar-search input { background: none; font-size: 13px; color: var(--text); width: 100%; }
+  .topbar-search input::placeholder { color: var(--text-3); }
+  .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: none;
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text-2); cursor: pointer; transition: all var(--transition);
+  }
+  .icon-btn:hover { background: var(--border); color: var(--text); }
+  .topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .topbar-user .av { width: 30px; height: 30px; border-radius: 50%; background: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+  .topbar-user .name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .topbar-user .role { font-size: 10px; color: var(--text-3); }
+
+  .topbar-tabs { display: flex; gap: 0; margin-left: 20px; }
+  .topbar-tab {
+    padding: 0 16px; height: var(--topbar-h); display: flex; align-items: center;
+    font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all var(--transition);
+  }
+  .topbar-tab:hover { color: var(--text); }
+  .topbar-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+  /* ============================================================
+     MAIN CONTENT AREA
+  ============================================================ */
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .content { flex: 1; padding: 28px 28px; }
+
+  /* ============================================================
+     COMPONENTS
+  ============================================================ */
+  /* Cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow); transition: background var(--transition), border-color var(--transition);
+  }
+  .card-amber { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .card-dark { background: var(--text); border-color: var(--text); color: var(--bg); }
+
+  /* Stat cards */
+  .stat-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+  .stat-label-light { color: rgba(255,255,255,0.7); }
+  .stat-value { font-family: var(--font); font-size: 32px; font-weight: 700; line-height: 1; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    font-family: var(--font-body); transition: all var(--transition); cursor: pointer;
+  }
+  .btn-primary { background: var(--amber); color: #fff; }
+  .btn-primary:hover { background: var(--amber-dark); }
+  .btn-ghost { background: var(--surface2); color: var(--text-2); }
+  .btn-ghost:hover { background: var(--border); color: var(--text); }
+  .btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--amber); color: var(--amber); }
+  .btn-white { background: #fff; color: var(--text); }
+  .btn-white:hover { background: #f5f5f5; }
+
+  /* Badge */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .badge-amber { background: var(--amber-glow); color: var(--amber); }
+  .badge-green { background: rgba(34,197,94,0.15); color: #16a34a; }
+  .badge-gray { background: var(--surface2); color: var(--text-3); }
+
+  /* Feature cards */
+  .feat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .feat-card:hover { border-color: var(--amber); box-shadow: 0 4px 24px var(--amber-glow); transform: translateY(-2px); }
+  .feat-icon { width: 42px; height: 42px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .feat-card.active-feat .feat-icon { background: var(--amber-glow); }
+  .feat-title { font-size: 13px; font-weight: 600; color: var(--text); font-family: var(--font); }
+  .feat-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; }
+
+  /* History item */
+  .hist-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; transition: all var(--transition);
+  }
+  .hist-item:hover { border-color: var(--amber); background: var(--surface2); }
+  .hist-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .hist-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .hist-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* Grid utilities */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .grid-auto { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  .grid-auto-sm { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+
+  /* Typography */
+  .section-title { font-family: var(--font); font-size: 18px; font-weight: 700; color: var(--text); }
+  .section-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+  .heading-xl { font-family: var(--font); font-size: 36px; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .heading-lg { font-family: var(--font); font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); font-family: var(--font); }
+  .label-amber { color: var(--amber); }
+
+  /* Chip selector */
+  .chip {
+    padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--surface2); color: var(--text-2);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .chip:hover { border-color: var(--amber); color: var(--amber); }
+  .chip.selected { background: var(--amber); border-color: var(--amber); color: #fff; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ============================================================
+     SCREEN 1 – UTAMA (Dashboard – Light)
+  ============================================================ */
+  #s1 { }
+  .s1-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+  .welcome-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+    padding: 32px 32px 28px; position: relative; overflow: hidden;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  }
+  .welcome-card::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, var(--amber-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .welcome-emoji { font-size: 28px; }
+  .welcome-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  /* ============================================================
+     SCREEN 2 – UTAMA (Dashboard – Dark / Researcher)
+  ============================================================ */
+  #s2 { }
+  .synthesis-card {
+    border-radius: 18px; padding: 28px 28px 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    position: relative; overflow: hidden; min-height: 220px;
+  }
+  .synthesis-bg {
+    position: absolute; right: -20px; top: -20px; bottom: -20px;
+    width: 200px; pointer-events: none; opacity: 0.25;
+    background: radial-gradient(circle at 70% 50%, var(--amber) 0%, transparent 65%);
+  }
+  .proj-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 10px; cursor: pointer; transition: background var(--transition);
+  }
+  .proj-item:hover { background: var(--surface2); }
+  .proj-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--amber-glow); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .proj-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .proj-meta { font-size: 11px; color: var(--text-3); }
+  .ask-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .ask-row:hover { border-color: var(--amber); }
+  .ask-orb { width: 40px; height: 40px; border-radius: 50%; background: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .tag-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--surface2); color: var(--text-2); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .fab { width: 48px; height: 48px; border-radius: 50%; background: var(--amber); border: none; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; cursor: pointer; box-shadow: 0 4px 20px var(--amber-glow); position: fixed; bottom: 28px; right: 28px; transition: all var(--transition); }
+  .fab:hover { background: var(--amber-dark); transform: scale(1.05); }
+
+  /* ============================================================
+     SCREEN 3 / 5 – INPUT KANDUNGAN
+  ============================================================ */
+  #s3, #s5 { }
+  .step-label { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .step-label .num { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: var(--amber); font-family: var(--font); }
+  .step-label .line { height: 2px; width: 40px; background: var(--amber); border-radius: 1px; }
+  .lang-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .audio-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    padding: 24px; margin-top: 14px;
+  }
+  [data-theme="dark"] .audio-card { background: rgba(255,255,255,0.04); }
+  .rec-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 700;
+    background: var(--amber); color: #fff; cursor: pointer; border: none; font-family: var(--font);
+    transition: all var(--transition);
+  }
+  .rec-btn:hover { background: var(--amber-dark); }
+  .rec-ready { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .upload-card {
+    background: var(--surface); border: 2px dashed var(--border); border-radius: var(--radius);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    padding: 28px; text-align: center; cursor: pointer; transition: all var(--transition);
+  }
+  .upload-card:hover { border-color: var(--amber); background: var(--amber-glow); }
+  .upload-icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-title { font-size: 15px; font-weight: 700; color: var(--text); font-family: var(--font); }
+  .upload-desc { font-size: 12px; color: var(--text-3); margin: 6px 0 16px; line-height: 1.6; }
+
+  .link-row {
+    display: flex; align-items: center; gap: 10px; padding: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .link-row:hover { border-color: var(--amber); }
+  .link-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+
+  .help-card {
+    background: var(--text); border-radius: var(--radius); padding: 20px; color: var(--bg);
+  }
+  [data-theme="dark"] .help-card { background: #1A1714; border: 1px solid var(--border); color: var(--text); }
+  .help-title { font-family: var(--font); font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .help-link { font-size: 13px; color: var(--amber-light); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; margin-top: 14px; }
+
+  .collab-bar { display: flex; align-items: center; gap: 10px; padding: 14px 28px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-2); }
+  .collab-avatars { display: flex; }
+  .collab-av { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--surface); font-size: 11px; display: flex; align-items: center; justify-content: center; background: var(--amber); color: #fff; margin-left: -6px; }
+  .collab-av:first-child { margin-left: 0; }
+  .privacy-badge { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
+
+  /* ============================================================
+     SCREEN 4 – TRANSKRIPSI PINTAR
+  ============================================================ */
+  #s4 { }
+  .topbar-4 {
+    display: flex; align-items: center; padding: 0 20px; height: var(--topbar-h);
+    border-bottom: 1px solid var(--border); background: var(--surface); gap: 16px;
+    flex-shrink: 0;
+  }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
+  .breadcrumb .sep { opacity: 0.5; }
+  .breadcrumb .current { color: var(--amber); font-weight: 600; }
+  .transcript-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    overflow: hidden;
+  }
+  .transcript-header {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text);
+  }
+  .transcript-body { padding: 24px; max-height: 600px; overflow-y: auto; }
+  .page-block { margin-bottom: 28px; }
+  .page-marker { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; font-family: var(--font); }
+  .page-time { font-size: 11px; color: var(--text-3); margin-bottom: 14px; }
+  .transcript-h1 { font-family: var(--font); font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .transcript-h2 { font-family: var(--font); font-size: 14px; font-weight: 700; color: var(--amber); margin-bottom: 8px; margin-top: 12px; }
+  .transcript-h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 14px; margin-bottom: 6px; }
+  .transcript-p { font-size: 13px; color: var(--text-2); line-height: 1.7; margin-bottom: 8px; }
+  .transcript-ul { list-style: none; padding: 0; }
+  .transcript-ul li { font-size: 13px; color: var(--text-2); line-height: 1.7; padding: 2px 0 2px 18px; position: relative; }
+  .transcript-ul li::before { content: '•'; position: absolute; left: 4px; color: var(--amber); }
+  .page-footer { padding: 10px 18px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-3); background: var(--surface2); }
+
+  .lang-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--amber); font-weight: 600; }
+  .date-tag { font-size: 11px; color: var(--text-3); }
+
+  .bottom-bar {
+    position: sticky; bottom: 0; border-top: 1px solid var(--border);
+    background: var(--surface); padding: 12px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* ============================================================
+     RESPONSIVE SIDEBAR for dark screens
+  ============================================================ */
+  .sidebar-dark .sidebar-logo { }
+  .sidebar-dark .nav-item.active { background: rgba(184,92,0,0.2); color: var(--amber-light); }
+
+  /* ============================================================
+     MISC
+  ============================================================ */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .gap-16 { gap: 16px; }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-20 { margin-top: 20px; }
+  .mt-24 { margin-top: 24px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .ml-auto { margin-left: auto; }
+  .text-sm { font-size: 12px; color: var(--text-3); }
+  .font-bold { font-weight: 700; }
+  .font-semi { font-weight: 600; }
+  .color-amber { color: var(--amber); }
+  .color-amber-light { color: var(--amber-light); }
+  .w-full { width: 100%; }
+  .flex-1 { flex: 1; }
+  .text-right { text-align: right; }
+
+  /* Animated fade-in for screens */
+  .shell { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Tooltip on nav item hover */
+  .sidebar-tooltip { position: relative; }
+
+  /* Notification dot */
+  .notif-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; position: absolute; top: 4px; right: 4px; }
+
+  /* Transcript paragraph highlighting */
+  .transcript-p {
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 8px 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    border-radius: 8px;
+  }
+  .transcript-p:hover {
+    background: rgba(184,92,0,0.08);
+  }
+  .transcript-p.highlighted {
+    background: rgba(184,92,0,0.15);
+    border-left: 3px solid var(--amber);
+    padding-left: 9px;
+  }
+
+  /* Floating action menu */
+  .floating-action {
+    display: none;
+    position: fixed;
+    background: var(--amber);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(184,92,0,0.3);
+    cursor: pointer;
+    z-index: 1000;
+    animation: fadeInUp 0.2s ease;
+  }
+  .floating-action.visible {
+    display: block;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body class="theme-light">
+
+<!-- ========================================================
+     VIDEO BACKGROUND
+======================================================== -->
+<video id="bg-video" autoplay loop muted playsinline>
+  <source src="https://cdn.pixabay.com/video/2021/08/04/83863-584743236_large.mp4" type="video/mp4">
+</video>
+
+<!-- ========================================================
+     SCREEN SWITCHER NAV
+======================================================== -->
+<nav id="screen-nav">
+  <span>DeepLearner OS Prototype →</span>
+  <button class="snav-btn active" onclick="showScreen(1)">1 · Utama (Light)</button>
+  <button class="snav-btn" onclick="showScreen(2)">2 · Utama (Dark)</button>
+  <button class="snav-btn" onclick="showScreen(3)">3 · Input Kandungan</button>
+  <button class="snav-btn" onclick="showScreen(4)">4 · Transkripsi</button>
+  <button class="snav-btn" onclick="showScreen(5)">5 · Input Dark</button>
+  <button class="snav-btn" onclick="showScreen(6)">6 · Ringkasan</button>
+  <button class="snav-btn" onclick="showScreen(7)">7 · Kuiz</button>
+  <button class="snav-btn" style="margin-left:auto" id="video-toggle-btn" onclick="toggleVideo()">🎥 Video Mode</button>
+  <button class="snav-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
+</nav>
+
+<!-- ========================================================
+     SCREEN 1 — UTAMA (Dashboard, Light Mode)
+======================================================== -->
+<div class="shell visible" id="s1">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">DeepLearner OS</div>
+      <div class="sub">Academic Curator</div>
+    </div>
+    <div class="nav-section" style="margin-top:12px">
+      <div class="nav-item active"><span class="icon">🏠</span> Utama</div>
+      <div class="nav-item"><span class="icon">＋</span> Sesi Baharu</div>
+      <div class="nav-item"><span class="icon">🕐</span> Sejarah</div>
+      <div class="nav-item"><span class="icon">👤</span> Profile</div>
+      <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+    </div>
+    <div class="sidebar-cta" style="margin-top: auto; margin-bottom: 20px; cursor:pointer">
+      + Sesi Baharu
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-search" style="margin-left:0">
+        <span style="font-size:14px;color:var(--text-3)">🔍</span>
+        <input type="text" placeholder="Cari nota atau kuiz…">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn">🌙</button>
+        <button class="icon-btn" style="position:relative">🔔<span class="notif-dot"></span></button>
+        <div class="topbar-user">
+          <div class="av">👤</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="s1-layout">
+        <!-- Left -->
+        <div>
+          <!-- Welcome -->
+          <div class="welcome-card">
+            <div class="heading-xl">Selamat Datang,<br>Pelajar! 👋</div>
+            <p style="font-size:14px;color:var(--text-2);margin-top:12px;max-width:420px;line-height:1.6">Sedia untuk meningkatkan pemahaman anda hari ini? Mari mulakan sesi pembelajaran pintar dengan DeepLearner OS.</p>
+            <div class="welcome-actions">
+              <button class="btn btn-primary">＋ Sesi Baharu</button>
+              <button class="btn btn-ghost">🕐 Sejarah</button>
+            </div>
+          </div>
+
+          <!-- Fungsi Utama -->
+          <div class="flex items-center justify-between mt-24 mb-16">
+            <div>
+              <div class="section-title">Fungsi Utama</div>
+              <div class="section-sub">Alatan AI untuk mempercepatkan kajian anda</div>
+            </div>
+            <span style="font-size:13px;color:var(--amber);font-weight:600;cursor:pointer">Lihat Semua</span>
+          </div>
+          <div class="grid-5">
+            <div class="feat-card active-feat">
+              <div class="feat-icon">🎙️</div>
+              <div>
+                <div class="feat-title">Input Audio</div>
+                <div class="feat-desc">Rakam kuliah secara langsung</div>
+              </div>
+            </div>
+            <div class="feat-card">
+              <div class="feat-icon">📝</div>
+              <div>
+                <div class="feat-title">Transkripsi Pintar</div>
+                <div class="feat-desc">Tukar suara ke teks tepat</div>
+              </div>
+            </div>
+            <div class="feat-card">
+              <div class="feat-icon">✨</div>
+              <div>
+                <div class="feat-title">Ringkasan Automatik</div>
+                <div class="feat-desc">Intipati penting dalam saat</div>
+              </div>
+            </div>
+            <div class="feat-card">
+              <div class="feat-icon">❓</div>
+              <div>
+                <div class="feat-title">Penjana Kuiz</div>
+                <div class="feat-desc">Uji kefahaman anda</div>
+              </div>
+            </div>
+            <div class="feat-card">
+              <div class="feat-icon">👤</div>
+              <div>
+                <div class="feat-title">Sejarah Nota</div>
+                <div class="feat-desc">Arkib kajian teratur</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+            <button class="btn btn-outline" style="font-size:13px;padding:9px 18px">📝 Input Teks</button>
+            <button class="btn btn-outline" style="font-size:13px;padding:9px 18px">🎙️ Rakam Audio</button>
+            <button class="btn btn-outline" style="font-size:13px;padding:9px 18px">📄 Muat Naik Fail</button>
+          </div>
+
+          <!-- Sesi Terkini -->
+          <div class="flex items-center justify-between mt-24 mb-16">
+            <div class="section-title">Sesi Terkini</div>
+            <span style="font-size:13px;color:var(--amber);font-weight:600;cursor:pointer">Lihat Semua</span>
+          </div>
+          <div class="card" style="padding:20px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:46px;height:46px;border-radius:12px;background:var(--amber-glow);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📝</div>
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Sistem Ahli</div>
+                <div style="font-size:12px;color:var(--text-3)">
+                  <span style="margin-right:12px">📊 1,247 perkataan</span>
+                  <span>⏱️ 24 Okt 2023</span>
+                </div>
+              </div>
+              <span class="badge badge-amber">DIPROSES</span>
+            </div>
+            <!-- Progress bar -->
+            <div style="height:6px;background:var(--surface2);border-radius:3px;margin-top:14px;overflow:hidden">
+              <div style="height:100%;background:var(--amber);width:75%;transition:width 0.3s ease"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:6px">Transkripsi selesai • Ringkasan dijana</div>
+          </div>
+
+          <!-- Sejarah -->
+          <div class="flex items-center justify-between mt-24 mb-16">
+            <div class="section-title">Sejarah Terkini</div>
+            <span style="font-size:14px;color:var(--text-3);cursor:pointer">≡</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="hist-item">
+              <div class="hist-icon">📄</div>
+              <div style="flex:1">
+                <div class="hist-title">Nota 10/3/2026</div>
+                <div class="hist-meta">Kuliah Biologi Molekul • 12:30 PM</div>
+              </div>
+              <span class="badge badge-gray">DERAF</span>
+            </div>
+            <div class="hist-item">
+              <div class="hist-icon">⚙️</div>
+              <div style="flex:1">
+                <div class="hist-title">Sesi Ulangkaji AI</div>
+                <div class="hist-meta">Pengenalan Algoritma • 09:15 AM</div>
+              </div>
+              <span class="badge badge-green">SELESAI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Stats -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="stat-label">Nota Disimpan</div>
+            <div class="stat-value">1</div>
+          </div>
+          <div class="card card-amber">
+            <div class="stat-label stat-label-light">Kuiz Selesai</div>
+            <div class="stat-value" style="color:#fff">150</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Sesi Hari Ini</div>
+            <div class="stat-value">0</div>
+          </div>
+          <!-- Tip -->
+          <div class="card" style="background:var(--surface2)">
+            <div style="font-size:18px;margin-bottom:8px">💡</div>
+            <div class="section-title" style="font-size:14px">Tip Belajar</div>
+            <p style="font-size:12px;color:var(--text-2);margin-top:8px;line-height:1.6">Gunakan <strong>"Ringkasan Automatik"</strong> selepas merakam kuliah untuk mendapatkan 5 poin utama dalam sekelip mata.</p>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:14px">
+              <div style="display:flex">
+                <div style="width:22px;height:22px;border-radius:50%;background:var(--amber-light);border:2px solid var(--surface2);margin-left:0;font-size:10px;display:flex;align-items:center;justify-content:center">A</div>
+                <div style="width:22px;height:22px;border-radius:50%;background:#6b7280;border:2px solid var(--surface2);margin-left:-6px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#fff">B</div>
+              </div>
+              <span style="font-size:11px;color:var(--text-3)">Sertai 1.2k pelajar lain</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCREEN 2 — UTAMA (Dashboard, Dark / Researcher)
+======================================================== -->
+<div class="shell theme-dark" id="s2" style="background:var(--bg);">
+  <aside class="sidebar sidebar-dark" style="background:#1E1B18;border-color:#2E2A26">
+    <div class="sidebar-logo" style="border-color:#2E2A26">
+      <div class="brand" style="color:#F0EDE8;font-size:11px;letter-spacing:0.1em;text-transform:uppercase">DeepLearner OS</div>
+      <div class="sub">Academic Curator</div>
+      <div class="avatar-row">
+        <div class="avatar" style="font-size:11px">🧑‍🔬</div>
+        <div>
+          <div class="av-name" style="color:#F0EDE8">Dr. Aris Firdaus</div>
+          <div class="av-role">Senior Researcher</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-section" style="margin-top:12px">
+      <div class="nav-item active" style="background:rgba(184,92,0,0.2);color:#D97706"><span class="icon">🏠</span> Utama</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">＋</span> Sesi Baharu</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">🕐</span> Sejarah</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">👤</span> Profile</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">⚙️</span> Settings</div>
+    </div>
+    <div class="sidebar-cta" style="margin-top:auto;margin-bottom:20px">
+      ＋ Sesi Baharu
+    </div>
+  </aside>
+
+  <div class="main" style="background:#141210">
+    <div class="topbar" style="background:#1E1B18;border-color:#2E2A26">
+      <div class="topbar-search" style="background:#141210;border-color:#2E2A26;margin-left:0">
+        <span style="font-size:14px;color:#6B625A">🔍</span>
+        <input type="text" placeholder="Cari dalam arkib…" style="color:#F0EDE8;background:none">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" style="background:#282420;color:#A89E94">🌙</button>
+        <button class="icon-btn" style="background:#282420;color:#A89E94;position:relative">🔔<span class="notif-dot"></span></button>
+        <div class="topbar-user">
+          <div class="av" style="background:var(--amber)">🧑</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div style="margin-bottom:24px">
+        <div class="heading-lg" style="color:#F0EDE8">Selamat Kembali, Curator.</div>
+        <p style="font-size:13px;color:#A89E94;margin-top:6px;max-width:500px;line-height:1.6">Analisis AI terkini menunjukkan peningkatan 14% dalam keberkesanan sintesis data anda minggu ini.</p>
+
+        <!-- AI Insight Banner -->
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 16px;background:#1E1B18;border:1px solid #2E2A26;border-radius:10px;max-width:500px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;animation:pulse 1.5s infinite"></span>
+          <span style="font-size:13px;color:#F0EDE8;font-weight:500">3 transkrip menunggu ringkasan</span>
+          <span style="margin-left:auto;color:var(--amber);font-size:18px;cursor:pointer">→</span>
+        </div>
+      </div>
+
+      <div class="grid-auto" style="margin-bottom:20px">
+        <!-- Synthesis card -->
+        <div class="synthesis-card" style="background:#1E1B18;border-color:#2E2A26">
+          <div class="synthesis-bg"></div>
+          <span class="badge badge-amber" style="font-size:9px;margin-bottom:14px;display:inline-flex">AI SYNTHESIS</span>
+          <div class="heading-lg" style="color:#F0EDE8;position:relative;z-index:1">Struktur Makro-Ekonomi dalam Sektor Teknologi Hijau 2024</div>
+          <p style="font-size:13px;color:#A89E94;margin-top:10px;line-height:1.6;max-width:400px;position:relative;z-index:1">Berdasarkan 42 kertas penyelidikan terkini, kami telah mengenal pasti satu anomali dalam rantaian bekalan nadir bumi yang mungkin memberi kesan kepada unjuran suku tahunan anda.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:20px;position:relative;z-index:1">
+            <button class="btn btn-white" style="font-size:12px;padding:9px 18px">Semak Analisis</button>
+            <span style="font-size:13px;color:#A89E94;cursor:pointer;font-weight:500">Simpan ke Arkib</span>
+          </div>
+        </div>
+
+        <!-- Right sidebar -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <!-- Active projects -->
+          <div class="card" style="background:#1E1B18;border-color:#2E2A26;padding:16px">
+            <div class="flex items-center justify-between mb-16">
+              <div class="section-title" style="color:#F0EDE8;font-size:14px">Projek Aktif</div>
+              <span style="color:#6B625A;cursor:pointer">⋮</span>
+            </div>
+            <div class="proj-item">
+              <div class="proj-icon">📄</div>
+              <div>
+                <div class="proj-name" style="color:#F0EDE8">Tesis Pendidikan AI</div>
+                <div class="proj-meta">Dikemas kini 2 jam lalu</div>
+              </div>
+            </div>
+            <div class="proj-item">
+              <div class="proj-icon" style="background:rgba(184,92,0,0.2)">📊</div>
+              <div>
+                <div class="proj-name" style="color:#F0EDE8">Pasaran Asia Tenggara</div>
+                <div class="proj-meta">Dikemas kini semalam</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="card" style="background:#1E1B18;border-color:#2E2A26;padding:16px">
+            <div class="stat-label">Jumlah Nota</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+              <div class="stat-value" style="color:#F0EDE8">1,284</div>
+              <div style="width:30px;height:30px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;margin-left:auto">📈</div>
+            </div>
+            <div style="font-size:12px;margin-top:4px"><span style="color:#22c55e;font-weight:700">+12%</span> <span style="color:#6B625A">daripada bulan lepas</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="grid-2">
+        <div class="ask-row" style="background:#1E1B18;border-color:#2E2A26">
+          <div class="ask-orb">✨</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#F0EDE8">Tanya DeepLearner OS</div>
+            <div style="font-size:11px;color:#6B625A;margin-top:2px">Sintesis idea anda dalam satu klik.</div>
+          </div>
+          <span style="margin-left:auto;color:#6B625A;font-size:16px">›</span>
+        </div>
+
+        <div class="card" style="background:#1E1B18;border-color:#2E2A26;padding:16px">
+          <div class="section-title" style="color:#F0EDE8;font-size:13px;margin-bottom:12px">Sejarah Sesi</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="tag-chip" style="background:#282420;color:#A89E94">💻 Etika Digital</div>
+            <div class="tag-chip" style="background:#282420;color:#A89E94">🧬 Bioteknologi</div>
+            <div class="tag-chip" style="background:#282420;color:#A89E94">🌐 Sosiologi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab">＋</button>
+</div>
+
+<!-- ========================================================
+     SCREEN 3 — INPUT KANDUNGAN (Light)
+======================================================== -->
+<div class="shell" id="s3">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">The Curator</div>
+      <div class="sub">Academic Workspace</div>
+    </div>
+    <div class="nav-section" style="margin-top:12px">
+      <div class="nav-item"><span class="icon">📚</span> Library</div>
+      <div class="nav-item active"><span class="icon">📊</span> Active Research</div>
+      <div class="nav-item"><span class="icon">⬆️</span> Upload</div>
+      <div class="nav-item"><span class="icon">💡</span> Insights</div>
+      <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+    </div>
+    <div style="margin-top:auto;padding:16px">
+      <button class="btn btn-primary w-full" style="justify-content:center">New Analysis</button>
+      <div class="nav-item" style="margin-top:8px"><span class="icon">❓</span> Support</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-brand">DeepLearner OS</div>
+      <div class="topbar-search">
+        <span style="font-size:14px;color:var(--text-3)">🔍</span>
+        <input type="text" placeholder="Cari dalam arkib…">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn">🔔</button>
+        <button class="icon-btn">❓</button>
+        <div class="topbar-user">
+          <div>
+            <div class="name">Dr. Aris</div>
+            <div class="role">Penyelidik Utama</div>
+          </div>
+          <div class="av">🧑</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="step-label">
+        <div class="num">LANGKAH 01</div>
+        <div class="line"></div>
+      </div>
+      <div class="heading-xl" style="margin-top:6px">Input Kandungan</div>
+      <p style="font-size:14px;color:var(--text-2);margin-top:8px;max-width:500px;line-height:1.6">Pilih kaedah input untuk memulakan analisis AI. Anda boleh merakam secara langsung atau memuat naik fail akademik sedia ada.</p>
+
+      <div class="grid-auto-sm" style="margin-top:28px">
+        <!-- Left -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Language selector -->
+          <div class="card">
+            <div class="flex items-center gap-8">
+              <span style="font-size:16px">🌐</span>
+              <div class="section-title" style="font-size:14px">Pilih Bahasa Sumber</div>
+            </div>
+            <div class="lang-row">
+              <div class="chip selected">✓ Bahasa Melayu</div>
+              <div class="chip">English (UK/US)</div>
+              <div class="chip">Mandarin</div>
+              <div class="chip">Arab</div>
+            </div>
+
+            <!-- Session Title -->
+            <div style="margin-top:16px">
+              <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:6px">Tajuk Sesi</label>
+              <input type="text" placeholder="cth: Kuliah Sejarah 10/3" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font-body);font-size:13px">
+            </div>
+          </div>
+
+          <!-- Audio recording -->
+          <div class="audio-card">
+            <div class="feat-icon" style="background:rgba(184,92,0,0.15);margin-bottom:14px">🎙️</div>
+            <div class="heading-lg" style="font-size:20px">Rakaman Audio Terus</div>
+            <p style="font-size:13px;color:var(--text-2);margin-top:8px;max-width:360px;line-height:1.6">Sempurna untuk syarahan secara langsung, temu bual penyelidikan, atau mesyuarat jawatankuasa. AI kami akan melakukan transkripsi masa nyata.</p>
+            <div class="flex items-center gap-12 mt-20">
+              <div class="rec-ready"><span class="rec-dot"></span> Sedia untuk merakam</div>
+              <button class="rec-btn" style="margin-left:auto">Mulakan Rakaman →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="display:flex;flex-direction:column;gap:12px">
+            <div class="section-title">Kandungan Transkrip</div>
+            <p style="font-size:12px;color:var(--text-3)">Tampal teks transkrip anda atau muat naik fail dokumen untuk dianalisis.</p>
+            <textarea placeholder="Tampalkan teks transkrip anda di sini..." style="width:100%;height:150px;border-radius:10px;padding:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);resize:vertical;font-family:var(--font-body);font-size:13px;"></textarea>
+            <div class="flex items-center justify-between mt-8">
+              <button class="btn btn-outline" style="font-size:12px">📄 Muat Naik Fail (.txt, .pdf, .docx)</button>
+              <button class="btn btn-primary" style="font-size:12px">✨ Proses Analisis →</button>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-title">Perlukan Bantuan?</div>
+            <p style="font-size:12px;opacity:0.75;line-height:1.6">Biar AI Curator kami membantu anda mencari sumber yang relevan berdasarkan topik anda.</p>
+            <div class="help-link">Tanya AI ↗</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collab-bar">
+      <div class="collab-avatars">
+        <div class="collab-av">A</div>
+        <div class="collab-av" style="background:#6b7280">B</div>
+        <div class="collab-av" style="background:#3b82f6">C</div>
+      </div>
+      <span><strong>14 rakan penyelidik</strong> aktif dalam projek ini</span>
+      <div class="privacy-badge">🔒 Privasi Data Terjamin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCREEN 4 — TRANSKRIPSI PINTAR
+======================================================== -->
+<div class="shell theme-dark" id="s4" style="background:#141210">
+  <aside class="sidebar" style="background:#1A1714;border-color:#2E2A26;width:160px;min-width:160px">
+    <div style="padding:14px 14px 10px;border-bottom:1px solid #2E2A26">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px">P</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.05em;color:#F0EDE8">DeepLearner OS</div>
+    </div>
+    <div class="nav-section" style="margin-top:8px">
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📊</span> Dashboard</div>
+      <div class="nav-item active" style="background:rgba(184,92,0,0.2);color:#D97706;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">🎙️</span> Sesi Semasa</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📁</span> Arkib</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">⚙️</span> Tetapan</div>
+    </div>
+  </aside>
+
+  <div class="main" style="background:#141210">
+    <!-- Topbar with tabs -->
+    <div class="topbar-4" style="background:#1A1714;border-color:#2E2A26">
+      <div class="topbar-tabs" style="margin-left:0">
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Utama</div>
+        <div class="topbar-tab active" style="color:#D97706;border-color:#D97706;font-size:12px;height:50px">Sesi Baharu</div>
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Sejarah</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#A89E94;font-weight:600">K</span>
+        <span style="font-size:12px;color:#A89E94">kisahejen ▾</span>
+      </div>
+    </div>
+
+    <div class="content" style="padding:24px">
+      <!-- Breadcrumb & title -->
+      <div class="breadcrumb" style="color:#6B625A;margin-bottom:8px">
+        <span>LANGKAH 1</span>
+        <span class="sep">›</span>
+        <span class="current">LANGKAH 2 DARIPADA 3</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:20px">📝</span>
+        <div class="heading-lg" style="color:#F0EDE8">Transkripsi Pintar</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div class="lang-tag">🌐 Bahasa dikesan: <span style="color:#D97706;margin-left:4px">Melayu / English</span></div>
+        <div class="date-tag">📅 Oktober 24, 2023</div>
+      </div>
+
+      <!-- Transcript with sidebar layout -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px">
+        <!-- Transcript box (left) -->
+        <div class="transcript-box" style="background:#1A1714;border-color:#2E2A26">
+        <div class="transcript-header" style="border-color:#2E2A26;color:#F0EDE8">
+          ≡ Teks Penuh Transkripsi
+        </div>
+        <div class="transcript-body">
+          <!-- Page 1 -->
+          <div class="page-block">
+            <div class="page-marker" style="color:#6B625A">[HALAMAN 1]</div>
+            <div class="page-time" style="color:#6B625A">3/10/26, 11:01 AM Sistem Ahli</div>
+            <div class="transcript-h1" style="color:#F0EDE8">Sistem Ahli</div>
+            <div class="transcript-h2">7.3 Sistem Ahli</div>
+            <div class="transcript-p" style="color:#A89E94">Pembentukan Sistem Ahli</div>
+            <div class="transcript-p" style="color:#A89E94">Diumumkan oleh <strong style="color:#F0EDE8">Sir Henry Gurney</strong> (Pesuruhjaya Tinggi British).</div>
+            <div class="transcript-p" style="color:#A89E94">Sistem Ahli bermaksud sistem yang melatih penduduk tempatan menerajui pentadbiran Persekutuan Tanah Melayu.</div>
+            <div class="transcript-p" style="color:#A89E94">Anggotanya terdiri daripada beberapa orang dari Majlis Perundangan Persekutuan (MPP).</div>
+            <div class="transcript-p" style="color:#A89E94">Sistem Ahli dilaksanakan pada bulan April 1951 hingga Jun 1955 iaitu sebelum pilihan raya MPP diadakan.</div>
+            <div class="transcript-h3" style="color:#F0EDE8">Tiga portfolio kekal di bawah pentadbiran British:</div>
+            <ul class="transcript-ul">
+              <li style="color:#A89E94">Hal Ehwal Ekonomi</li>
+              <li style="color:#A89E94">Perindustrian dan Perhubungan Sosial</li>
+              <li style="color:#A89E94">Perumahan dan Kerja Raya.</li>
+            </ul>
+            <div class="transcript-p" style="color:#A89E94;margin-top:10px">Tahun 1954, rombakan Sistem Ahli berlaku dan portfolio diwujudkan dan dijawat oleh warganegara Persekutuan Tanah Melayu yang menjadi anggota MPP.</div>
+            <div class="transcript-h3" style="color:#F0EDE8">Ciri-ciri Sistem Ahli:</div>
+            <ul class="transcript-ul">
+              <li style="color:#A89E94">Ahli bertaraf "Menteri" dan bertanggungjawab menjaga portfolio yang kandungi jabatan dan agensi kerajaan.</li>
+              <li style="color:#A89E94">Dilantik oleh Pesuruhjaya Tinggi British dengan persetujuan Majlis Raja-Raja.</li>
+              <li style="color:#A89E94">Bertanggungjawab mencadangkan undang-undang berkaitan dengan jabatannya dan dibentang dalam MPP.</li>
+              <li style="color:#A89E94">Diletakkan dibawah kuasa Pesuruhjaya Tinggi.</li>
+              <li style="color:#A89E94">Satu sistem kabinet bayangan terdiri daripada beberapa pegawai tadbir dan tokoh masyarakat.</li>
+            </ul>
+            <div class="page-footer" style="background:#141210;border-color:#2E2A26;color:#6B625A;margin-top:16px;border-radius:0 0 0 0">
+              © 2026 Pandai.org All Rights Reserved<br>
+              https://app.pandai.org/note/read/kssm-sj-10-07-03/KSSM-F4-SJ-07-03 1/2
+            </div>
+          </div>
+
+          <!-- Page 2 -->
+          <div class="page-block" style="margin-top:8px">
+            <div class="page-marker" style="color:#6B625A">[HALAMAN 2]</div>
+            <div class="page-time" style="color:#6B625A">3/10/26, 11:01 AM Sistem Ahli</div>
+            <div class="transcript-h1" style="color:#F0EDE8">Dato' Onn Jaafar</div>
+            <div class="transcript-p" style="color:#A89E94">Menteri Hal Ehwal Dalam Negeri Persekutuan Tanah Melayu.</div>
+            <div class="transcript-h3" style="color:#F0EDE8">Antara tanggungjawab beliau:</div>
+            <ul class="transcript-ul">
+              <li style="color:#A89E94">Hal ehwal imigran.</li>
+              <li style="color:#A89E94">Penyiaran dan percetakan.</li>
+              <li style="color:#A89E94">Hubungan negeri Melayu dengan Negeri-negeri Selat.</li>
+              <li style="color:#A89E94">Hal ehwal menunaikan haji.</li>
+              <li style="color:#A89E94">Pendaftaran kerakyatan.</li>
+              <li style="color:#A89E94">Perkahwinan.</li>
+              <li style="color:#A89E94">Kematian.</li>
+              <li style="color:#A89E94">Menjaga jabatan</li>
+              <li style="color:#A89E94">Lembaga Pembangunan Industri Desa atau Rural Industrial Developent Authority (RIDA)</li>
+              <li style="color:#A89E94">Jabatan Pilihan Raya</li>
+              <li style="color:#A89E94">Jabatan Rupa Bangsa Nasional</li>
+            </ul>
+            <div class="page-footer" style="background:#141210;border-color:#2E2A26;color:#6B625A;margin-top:16px">
+              © 2026 Pandai.org All Rights Reserved<br>
+              https://app.pandai.org/note/read/kssm-sj-10-07-03/KSSM-F4-SJ-07-03 2/2
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right sidebar: Metadata panel -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <!-- Session info card -->
+        <div class="card" style="background:#1A1714;border-color:#2E2A26;padding:18px">
+          <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6B625A;margin-bottom:10px;font-family:var(--font)">MAKLUMAT SESI</div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;color:#6B625A;margin-bottom:4px">Tajuk Sesi</div>
+            <div style="font-size:13px;color:#F0EDE8;font-weight:600">Sistem Ahli</div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;color:#6B625A;margin-bottom:4px">Bahasa Dikesan</div>
+            <div style="font-size:13px;color:#F0EDE8;display:flex;align-items:center;gap:6px">
+              🌐 <span>Melayu / English</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;color:#6B625A;margin-bottom:4px">Jumlah Perkataan</div>
+            <div style="font-size:13px;color:#F0EDE8">1,247 perkataan</div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:#6B625A;margin-bottom:4px">Anggaran Masa Baca</div>
+            <div style="font-size:13px;color:#F0EDE8">⏱️ 6 minit</div>
+          </div>
+        </div>
+
+        <!-- Quick actions card -->
+        <div class="card" style="background:#1A1714;border-color:#2E2A26;padding:18px">
+          <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6B625A;margin-bottom:12px;font-family:var(--font)">TINDAKAN PANTAS</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;border-color:#2E2A26;color:#F0EDE8;padding:8px">📥 Eksport PDF</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;border-color:#2E2A26;color:#F0EDE8;padding:8px">🔖 Simpan ke Arkib</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;border-color:#2E2A26;color:#F0EDE8;padding:8px">🔗 Kongsi Link</button>
+          </div>
+        </div>
+      </div>
+
+      </div>
+    </div>
+
+    <div class="bottom-bar" style="background:#1A1714;border-color:#2E2A26">
+      <button class="btn btn-ghost" style="background:#282420;color:#A89E94;font-size:12px">📋 Salin Teks</button>
+      <button class="btn btn-primary" style="font-size:12px">✨ Jana Ringkasan →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCREEN 5 — INPUT KANDUNGAN (Dark)
+======================================================== -->
+<div class="shell theme-dark" id="s5" style="background:#141210">
+  <aside class="sidebar" style="background:#1E1B18;border-color:#2E2A26">
+    <div class="sidebar-logo" style="border-color:#2E2A26">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px">⚙️</div>
+      <div class="brand" style="color:#F0EDE8">The Curator</div>
+      <div class="sub">Academic Workspace</div>
+    </div>
+    <div class="nav-section" style="margin-top:12px">
+      <div class="nav-item" style="color:#A89E94"><span class="icon">📚</span> Library</div>
+      <div class="nav-item active" style="background:rgba(184,92,0,0.2);color:#D97706"><span class="icon">📊</span> Active Research</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">⬆️</span> Upload</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">💡</span> Insights</div>
+      <div class="nav-item" style="color:#A89E94"><span class="icon">⚙️</span> Settings</div>
+    </div>
+    <div style="margin-top:auto;padding:16px">
+      <button class="btn btn-primary w-full" style="justify-content:center">New Analysis</button>
+      <div class="nav-item" style="margin-top:8px;color:#A89E94"><span class="icon">❓</span> Support</div>
+    </div>
+  </aside>
+
+  <div class="main" style="background:#141210">
+    <div class="topbar" style="background:#1E1B18;border-color:#2E2A26">
+      <div class="topbar-brand" style="color:#F0EDE8">DeepLearner OS</div>
+      <div class="topbar-search" style="background:#141210;border-color:#2E2A26">
+        <span style="font-size:14px;color:#6B625A">🔍</span>
+        <input type="text" placeholder="Cari dalam arkib…" style="color:#F0EDE8;background:none">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" style="background:#282420;color:#A89E94">🔔</button>
+        <button class="icon-btn" style="background:#282420;color:#A89E94">❓</button>
+        <div class="topbar-user">
+          <div>
+            <div class="name" style="color:#F0EDE8">Dr. Aris</div>
+            <div class="role">Penyelidik Utama</div>
+          </div>
+          <div class="av" style="background:var(--amber)">🧑</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="step-label">
+        <div class="num">LANGKAH 01</div>
+        <div class="line"></div>
+      </div>
+      <div class="heading-xl" style="color:#F0EDE8;margin-top:6px">Input Kandungan</div>
+      <p style="font-size:14px;color:#A89E94;margin-top:8px;max-width:500px;line-height:1.6">Pilih kaedah input untuk memulakan analisis AI. Anda boleh merakam secara langsung atau memuat naik fail akademik sedia ada.</p>
+
+      <div class="grid-auto-sm" style="margin-top:28px">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card" style="background:#1E1B18;border-color:#2E2A26">
+            <div class="flex items-center gap-8">
+              <span style="font-size:16px">🌐</span>
+              <div class="section-title" style="color:#F0EDE8;font-size:14px">Pilih Bahasa Sumber</div>
+            </div>
+            <div class="lang-row">
+              <div class="chip selected">✓ Bahasa Melayu</div>
+              <div class="chip" style="background:#282420;color:#A89E94;border-color:#2E2A26">English (UK/US)</div>
+              <div class="chip" style="background:#282420;color:#A89E94;border-color:#2E2A26">Mandarin</div>
+              <div class="chip" style="background:#282420;color:#A89E94;border-color:#2E2A26">Arab</div>
+            </div>
+
+            <!-- Session Title -->
+            <div style="margin-top:16px">
+              <label style="font-size:12px;color:#A89E94;font-weight:600;display:block;margin-bottom:6px">Tajuk Sesi</label>
+              <input type="text" placeholder="cth: Kuliah Sejarah 10/3" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid #2E2A26;background:#282420;color:#F0EDE8;font-family:var(--font-body);font-size:13px">
+            </div>
+          </div>
+
+          <div class="audio-card" style="background:#1E1B18;border-color:#2E2A26">
+            <div class="feat-icon" style="background:rgba(184,92,0,0.2);margin-bottom:14px">🎙️</div>
+            <div class="heading-lg" style="color:#F0EDE8;font-size:20px">Rakaman Audio Terus</div>
+            <p style="font-size:13px;color:#A89E94;margin-top:8px;max-width:360px;line-height:1.6">Sempurna untuk syarahan secara langsung, temu bual penyelidikan, atau mesyuarat jawatankuasa. AI kami akan melakukan transkripsi masa nyata.</p>
+            <div class="flex items-center gap-12 mt-20">
+              <div class="rec-ready" style="color:#6B625A"><span class="rec-dot"></span> Sedia untuk merakam</div>
+              <button class="rec-btn" style="margin-left:auto">Mulakan Rakaman →</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;background:#1E1B18;border-color:#2E2A26">
+            <div class="section-title" style="color:#F0EDE8">Kandungan Transkrip</div>
+            <p style="font-size:12px;color:#A89E94">Tampal teks transkrip anda atau muat naik fail dokumen untuk dianalisis.</p>
+            <textarea placeholder="Tampalkan teks transkrip anda di sini..." style="width:100%;height:150px;border-radius:10px;padding:12px;border:1px solid #2E2A26;background:#282420;color:#F0EDE8;resize:vertical;font-family:var(--font-body);font-size:13px;"></textarea>
+            <div class="flex items-center justify-between mt-8">
+              <button class="btn btn-outline" style="border-color:#2E2A26;color:#F0EDE8;font-size:12px">📄 Muat Naik Fail (.txt, .pdf, .docx)</button>
+              <button class="btn btn-primary" style="font-size:12px">✨ Proses Analisis →</button>
+            </div>
+          </div>
+
+          <div style="background:#1A1714;border:1px solid #2E2A26;border-radius:var(--radius);padding:20px">
+            <div class="help-title" style="color:#F0EDE8">Perlukan Bantuan?</div>
+            <p style="font-size:12px;color:#A89E94;line-height:1.6;margin-top:6px">Biar AI Curator kami membantu anda mencari sumber yang relevan berdasarkan topik anda.</p>
+            <div class="help-link">Tanya AI ↗</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collab-bar" style="border-color:#2E2A26">
+      <div class="collab-avatars">
+        <div class="collab-av" style="border-color:#1E1B18">A</div>
+        <div class="collab-av" style="background:#6b7280;border-color:#1E1B18">B</div>
+        <div class="collab-av" style="background:#3b82f6;border-color:#1E1B18">+12</div>
+      </div>
+      <span style="color:#A89E94"><strong style="color:#F0EDE8">14 rakan penyelidik</strong> aktif dalam projek ini</span>
+      <div class="privacy-badge">🔒 Privasi Data Terjamin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCREEN 6 — RINGKASAN (Summary)
+======================================================== -->
+<div class="shell theme-dark" id="s6" style="background:#141210">
+  <aside class="sidebar" style="background:#1A1714;border-color:#2E2A26;width:160px;min-width:160px">
+    <div style="padding:14px 14px 10px;border-bottom:1px solid #2E2A26">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px">P</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.05em;color:#F0EDE8">DeepLearner OS</div>
+    </div>
+    <div class="nav-section" style="margin-top:8px">
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📊</span> Dashboard</div>
+      <div class="nav-item active" style="background:rgba(184,92,0,0.2);color:#D97706;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">✨</span> Ringkasan</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📁</span> Arkib</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">⚙️</span> Tetapan</div>
+    </div>
+  </aside>
+
+  <div class="main" style="background:#141210">
+    <!-- Topbar with tabs -->
+    <div class="topbar-4" style="background:#1A1714;border-color:#2E2A26">
+      <div class="topbar-tabs" style="margin-left:0">
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Utama</div>
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Sesi Baharu</div>
+        <div class="topbar-tab active" style="color:#D97706;border-color:#D97706;font-size:12px;height:50px">Ringkasan</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#A89E94;font-weight:600">K</span>
+        <span style="font-size:12px;color:#A89E94">kisahejen ▾</span>
+      </div>
+    </div>
+
+    <div class="content" style="padding:24px">
+      <!-- Breadcrumb & title -->
+      <div class="breadcrumb" style="color:#6B625A;margin-bottom:8px">
+        <span>LANGKAH 1</span>
+        <span class="sep">›</span>
+        <span>LANGKAH 2</span>
+        <span class="sep">›</span>
+        <span class="current">LANGKAH 3 DARIPADA 3</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:20px">✨</span>
+        <div class="heading-lg" style="color:#F0EDE8">Ringkasan Automatik</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div class="lang-tag">📝 Sesi: <span style="color:#D97706;margin-left:4px">Sistem Ahli</span></div>
+        <div class="date-tag">📅 Oktober 24, 2023</div>
+      </div>
+
+      <!-- Key Points Card -->
+      <div class="card" style="background:#1A1714;border-color:#2E2A26;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <span style="font-size:16px">🎯</span>
+          <div class="section-title" style="color:#F0EDE8;font-size:16px">5 Poin Utama</div>
+        </div>
+        <ol style="list-style:none;padding:0;margin:0;counter-reset:key-point">
+          <li style="counter-increment:key-point;font-size:13px;color:#A89E94;line-height:1.8;padding:10px 0 10px 36px;position:relative;border-bottom:1px solid #2E2A26">
+            <span style="position:absolute;left:0;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(184,92,0,0.2);color:#D97706;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font)">1</span>
+            Sistem Ahli diumumkan oleh Sir Henry Gurney untuk melatih penduduk tempatan menerajui pentadbiran Persekutuan Tanah Melayu
+          </li>
+          <li style="counter-increment:key-point;font-size:13px;color:#A89E94;line-height:1.8;padding:10px 0 10px 36px;position:relative;border-bottom:1px solid #2E2A26">
+            <span style="position:absolute;left:0;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(184,92,0,0.2);color:#D97706;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font)">2</span>
+            Sistem ini dilaksanakan dari April 1951 hingga Jun 1955, sebelum pilihan raya MPP diadakan
+          </li>
+          <li style="counter-increment:key-point;font-size:13px;color:#A89E94;line-height:1.8;padding:10px 0 10px 36px;position:relative;border-bottom:1px solid #2E2A26">
+            <span style="position:absolute;left:0;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(184,92,0,0.2);color:#D97706;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font)">3</span>
+            Tiga portfolio kekal di bawah pentadbiran British: Hal Ehwal Ekonomi, Perindustrian dan Perhubungan Sosial, serta Perumahan dan Kerja Raya
+          </li>
+          <li style="counter-increment:key-point;font-size:13px;color:#A89E94;line-height:1.8;padding:10px 0 10px 36px;position:relative;border-bottom:1px solid #2E2A26">
+            <span style="position:absolute;left:0;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(184,92,0,0.2);color:#D97706;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font)">4</span>
+            Ahli bertaraf "Menteri" dilantik oleh Pesuruhjaya Tinggi British dengan persetujuan Majlis Raja-Raja
+          </li>
+          <li style="counter-increment:key-point;font-size:13px;color:#A89E94;line-height:1.8;padding:10px 0 10px 36px;position:relative">
+            <span style="position:absolute;left:0;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(184,92,0,0.2);color:#D97706;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font)">5</span>
+            Dato' Onn Jaafar dilantik sebagai Menteri Hal Ehwal Dalam Negeri dengan pelbagai tanggungjawab termasuk imigran, penyiaran, dan urusan haji
+          </li>
+        </ol>
+      </div>
+
+      <!-- Full Summary Card -->
+      <div class="card" style="background:#1A1714;border-color:#2E2A26;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <span style="font-size:16px">📄</span>
+          <div class="section-title" style="color:#F0EDE8;font-size:16px">Ringkasan Penuh</div>
+        </div>
+        <p style="font-size:13px;color:#A89E94;line-height:1.8">
+          Sistem Ahli merupakan satu langkah penting dalam proses peralihan kuasa daripada British kepada penduduk tempatan di Persekutuan Tanah Melayu. Diumumkan oleh Sir Henry Gurney, sistem ini bertujuan melatih rakyat tempatan untuk menerajui pentadbiran negara. Dilaksanakan dari April 1951 hingga Jun 1955, sistem ini mewujudkan portfolio yang dijawat oleh anggota Majlis Perundangan Persekutuan (MPP), walaupun tiga portfolio utama masih kekal di bawah kawalan British. Ahli-ahli ini bertaraf "Menteri" dan bertanggungjawab mencadangkan undang-undang serta menguruskan jabatan kerajaan. Dato' Onn Jaafar merupakan salah seorang tokoh utama yang dilantik sebagai Menteri Hal Ehwal Dalam Negeri, mengendalikan pelbagai tanggungjawab penting termasuk urusan imigran, penyiaran, dan kerakyatan. Sistem ini membentuk asas kepada sistem kabinet yang wujud sehingga kini.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar" style="background:#1A1714;border-color:#2E2A26">
+      <button class="btn btn-ghost" style="background:#282420;color:#A89E94;font-size:12px">📥 Muat Turun Ringkasan (.pdf)</button>
+      <button class="btn btn-primary" style="font-size:12px">❓ Jana Kuiz →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCREEN 7 — KUIZ (Quiz)
+======================================================== -->
+<div class="shell theme-dark" id="s7" style="background:#141210">
+  <aside class="sidebar" style="background:#1A1714;border-color:#2E2A26;width:160px;min-width:160px">
+    <div style="padding:14px 14px 10px;border-bottom:1px solid #2E2A26">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px">P</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.05em;color:#F0EDE8">DeepLearner OS</div>
+    </div>
+    <div class="nav-section" style="margin-top:8px">
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📊</span> Dashboard</div>
+      <div class="nav-item active" style="background:rgba(184,92,0,0.2);color:#D97706;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">❓</span> Kuiz</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">📁</span> Arkib</div>
+      <div class="nav-item" style="color:#A89E94;font-size:12px;padding:8px"><span class="icon" style="font-size:13px">⚙️</span> Tetapan</div>
+    </div>
+  </aside>
+
+  <div class="main" style="background:#141210">
+    <!-- Topbar with tabs -->
+    <div class="topbar-4" style="background:#1A1714;border-color:#2E2A26">
+      <div class="topbar-tabs" style="margin-left:0">
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Utama</div>
+        <div class="topbar-tab" style="color:#A89E94;font-size:12px;height:50px">Ringkasan</div>
+        <div class="topbar-tab active" style="color:#D97706;border-color:#D97706;font-size:12px;height:50px">Kuiz</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#A89E94;font-weight:600">K</span>
+        <span style="font-size:12px;color:#A89E94">kisahejen ▾</span>
+      </div>
+    </div>
+
+    <div class="content" style="padding:24px">
+      <!-- Quiz Question View -->
+      <div id="quiz-question-view">
+        <!-- Question counter -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">❓</span>
+            <div class="heading-lg" style="color:#F0EDE8">Kuiz: Sistem Ahli</div>
+          </div>
+          <div style="font-size:13px;color:#A89E94;font-family:var(--font);font-weight:600">
+            <span style="color:#D97706" id="quiz-current">1</span> daripada <span id="quiz-total">5</span>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="height:4px;background:#2E2A26;border-radius:2px;margin-bottom:28px;overflow:hidden">
+          <div id="quiz-progress" style="height:100%;background:var(--amber);width:20%;transition:width 0.3s ease"></div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="card" style="background:#1A1714;border-color:#2E2A26;margin-bottom:24px;padding:32px">
+          <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6B625A;margin-bottom:12px;font-family:var(--font)">SOALAN <span id="q-num">1</span></div>
+          <div style="font-size:17px;color:#F0EDE8;line-height:1.6;font-weight:500;margin-bottom:28px" id="quiz-question-text">
+            Siapakah yang mengumumkan Sistem Ahli?
+          </div>
+
+          <!-- Answer options -->
+          <div style="display:flex;flex-direction:column;gap:12px" id="quiz-options">
+            <div class="quiz-option" data-answer="a" style="padding:16px 20px;border-radius:12px;background:#282420;border:2px solid #2E2A26;color:#F0EDE8;font-size:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px">
+              <span style="width:28px;height:28px;border-radius:50%;background:#2E2A26;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">A</span>
+              <span>Tunku Abdul Rahman</span>
+            </div>
+            <div class="quiz-option" data-answer="b" style="padding:16px 20px;border-radius:12px;background:#282420;border:2px solid #2E2A26;color:#F0EDE8;font-size:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px">
+              <span style="width:28px;height:28px;border-radius:50%;background:#2E2A26;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">B</span>
+              <span>Sir Henry Gurney</span>
+            </div>
+            <div class="quiz-option" data-answer="c" style="padding:16px 20px;border-radius:12px;background:#282420;border:2px solid #2E2A26;color:#F0EDE8;font-size:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px">
+              <span style="width:28px;height:28px;border-radius:50%;background:#2E2A26;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">C</span>
+              <span>Dato' Onn Jaafar</span>
+            </div>
+            <div class="quiz-option" data-answer="d" style="padding:16px 20px;border-radius:12px;background:#282420;border:2px solid #2E2A26;color:#F0EDE8;font-size:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px">
+              <span style="width:28px;height:28px;border-radius:50%;background:#2E2A26;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">D</span>
+              <span>Majlis Raja-Raja</span>
+            </div>
+          </div>
+
+          <!-- Feedback area -->
+          <div id="quiz-feedback" style="display:none;margin-top:20px;padding:14px 18px;border-radius:10px;font-size:13px;line-height:1.6"></div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+          <button id="quiz-check-btn" class="btn btn-primary" style="font-size:13px">Semak Jawapan</button>
+          <button id="quiz-next-btn" class="btn btn-primary" style="font-size:13px;display:none">Soalan Seterusnya →</button>
+        </div>
+      </div>
+
+      <!-- Quiz Results View -->
+      <div id="quiz-results-view" style="display:none">
+        <div style="text-align:center;max-width:500px;margin:80px auto">
+          <div style="font-size:64px;margin-bottom:20px">🎉</div>
+          <div class="heading-xl" style="color:#F0EDE8;margin-bottom:12px">Tahniah!</div>
+          <p style="font-size:14px;color:#A89E94;margin-bottom:32px">Anda telah selesai kuiz Sistem Ahli</p>
+
+          <div class="card" style="background:#1A1714;border-color:#2E2A26;padding:32px;margin-bottom:28px">
+            <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6B625A;margin-bottom:8px">MARKAH ANDA</div>
+            <div style="font-size:56px;font-weight:800;font-family:var(--font);color:#D97706;margin-bottom:8px" id="quiz-score">4/5</div>
+            <div style="font-size:13px;color:#A89E94">
+              <span style="color:#22c55e;font-weight:700" id="quiz-correct-count">4 Betul ✅</span> •
+              <span style="color:#ef4444;font-weight:700" id="quiz-wrong-count">1 Salah ❌</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-outline" style="border-color:#2E2A26;color:#F0EDE8" onclick="resetQuiz()">🔄 Ulang Kuiz</button>
+            <button class="btn btn-primary" onclick="showScreen(1)">🏠 Kembali ke Dashboard</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     JAVASCRIPT
+======================================================== -->
+<script>
+  let currentScreen = 1;
+
+  // Initialize from LocalStorage
+  document.addEventListener("DOMContentLoaded", () => {
+    // Theme
+    const savedTheme = localStorage.getItem("dl_theme") || "light";
+    if (savedTheme === "dark") {
+      document.body.classList.replace("theme-light", "theme-dark");
+      document.getElementById("theme-toggle-btn").textContent = "☀️ Light Mode";
+    }
+
+    // Video Mode
+    const savedVideoMode = localStorage.getItem("dl_video_mode");
+    if (savedVideoMode === "static") {
+      document.body.classList.add("static-mode");
+      document.getElementById("video-toggle-btn").textContent = "🖼️ Static Mode";
+    }
+  });
+
+  function showScreen(n) {
+    // Hide all
+    document.querySelectorAll('.shell').forEach(el => el.classList.remove('visible'));
+    // Show target
+    const target = document.getElementById('s' + n);
+    target.classList.add('visible');
+    currentScreen = n;
+    // Update nav buttons
+    document.querySelectorAll('.snav-btn').forEach((btn, i) => {
+      // the first 7 buttons are screens 1-7
+      if(i < 7) btn.classList.toggle('active', i === n - 1);
+    });
+
+    // Initialize quiz if showing screen 7
+    if (n === 7) {
+      initQuiz();
+    }
+  }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.contains("theme-light");
+    const btn = document.getElementById('theme-toggle-btn');
+    if (isLight) {
+      document.body.classList.replace("theme-light", "theme-dark");
+      localStorage.setItem("dl_theme", "dark");
+      btn.textContent = '☀️ Light Mode';
+    } else {
+      document.body.classList.replace("theme-dark", "theme-light");
+      localStorage.setItem("dl_theme", "light");
+      btn.textContent = '🌙 Dark Mode';
+    }
+  }
+
+  function toggleVideo() {
+    const isStatic = document.body.classList.contains("static-mode");
+    const btn = document.getElementById("video-toggle-btn");
+    if (isStatic) {
+      document.body.classList.remove("static-mode");
+      localStorage.setItem("dl_video_mode", "video");
+      btn.textContent = "🎥 Video Mode";
+    } else {
+      document.body.classList.add("static-mode");
+      localStorage.setItem("dl_video_mode", "static");
+      btn.textContent = "🖼️ Static Mode";
+    }
+  }
+
+  // Chip toggle
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      const siblings = this.parentElement.querySelectorAll('.chip');
+      siblings.forEach(s => s.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+
+  // Nav item clicks (within each shell)
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const siblings = this.closest('.sidebar').querySelectorAll('.nav-item');
+      siblings.forEach(s => s.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Hist items hover feedback
+  document.querySelectorAll('.feat-card').forEach(card => {
+    card.addEventListener('click', function() {
+      this.closest('.grid-5, .grid-3, .grid-2')?.querySelectorAll('.feat-card').forEach(c => c.classList.remove('active-feat'));
+      this.classList.add('active-feat');
+    });
+  });
+
+  // ========================================================
+  // QUIZ FUNCTIONALITY
+  // ========================================================
+  let quizData = [
+    {
+      question: "Siapakah yang mengumumkan Sistem Ahli?",
+      options: ["Tunku Abdul Rahman", "Sir Henry Gurney", "Dato' Onn Jaafar", "Majlis Raja-Raja"],
+      correct: 1
+    },
+    {
+      question: "Pada tahun berapakah Sistem Ahli mula dilaksanakan?",
+      options: ["1948", "1951", "1954", "1955"],
+      correct: 1
+    },
+    {
+      question: "Berapa lama Sistem Ahli dilaksanakan?",
+      options: ["2 tahun", "3 tahun", "4 tahun", "5 tahun"],
+      correct: 2
+    },
+    {
+      question: "Apakah jawatan yang dipegang oleh Dato' Onn Jaafar dalam Sistem Ahli?",
+      options: ["Menteri Kewangan", "Menteri Hal Ehwal Dalam Negeri", "Menteri Pertahanan", "Menteri Pendidikan"],
+      correct: 1
+    },
+    {
+      question: "Berapa portfolio yang kekal di bawah pentadbiran British?",
+      options: ["1", "2", "3", "4"],
+      correct: 2
+    }
+  ];
+
+  let currentQuizQuestion = 0;
+  let quizScore = 0;
+  let selectedAnswer = null;
+
+  function initQuiz() {
+    currentQuizQuestion = 0;
+    quizScore = 0;
+    selectedAnswer = null;
+    loadQuizQuestion();
+  }
+
+  function loadQuizQuestion() {
+    if (currentQuizQuestion >= quizData.length) {
+      showQuizResults();
+      return;
+    }
+
+    const q = quizData[currentQuizQuestion];
+    document.getElementById('quiz-current').textContent = currentQuizQuestion + 1;
+    document.getElementById('quiz-total').textContent = quizData.length;
+    document.getElementById('q-num').textContent = currentQuizQuestion + 1;
+    document.getElementById('quiz-question-text').textContent = q.question;
+
+    // Update progress bar
+    const progress = ((currentQuizQuestion + 1) / quizData.length) * 100;
+    document.getElementById('quiz-progress').style.width = progress + '%';
+
+    // Update options
+    const optionsContainer = document.getElementById('quiz-options');
+    const options = optionsContainer.querySelectorAll('.quiz-option');
+    const labels = ['A', 'B', 'C', 'D'];
+
+    options.forEach((opt, idx) => {
+      opt.querySelector('span:last-child').textContent = q.options[idx];
+      opt.style.background = '#282420';
+      opt.style.borderColor = '#2E2A26';
+      opt.style.pointerEvents = 'auto';
+    });
+
+    // Hide feedback and reset buttons
+    document.getElementById('quiz-feedback').style.display = 'none';
+    document.getElementById('quiz-check-btn').style.display = 'inline-flex';
+    document.getElementById('quiz-next-btn').style.display = 'none';
+    selectedAnswer = null;
+  }
+
+  function showQuizResults() {
+    document.getElementById('quiz-question-view').style.display = 'none';
+    document.getElementById('quiz-results-view').style.display = 'block';
+
+    const correctCount = quizScore;
+    const wrongCount = quizData.length - quizScore;
+
+    document.getElementById('quiz-score').textContent = quizScore + '/' + quizData.length;
+    document.getElementById('quiz-correct-count').textContent = correctCount + ' Betul ✅';
+    document.getElementById('quiz-wrong-count').textContent = wrongCount + ' Salah ❌';
+  }
+
+  function resetQuiz() {
+    document.getElementById('quiz-question-view').style.display = 'block';
+    document.getElementById('quiz-results-view').style.display = 'none';
+    initQuiz();
+  }
+
+  // Quiz option selection
+  document.querySelectorAll('.quiz-option').forEach((option, idx) => {
+    option.addEventListener('click', function() {
+      if (selectedAnswer !== null) return; // Already answered
+
+      // Remove previous selection
+      document.querySelectorAll('.quiz-option').forEach(opt => {
+        opt.style.borderColor = '#2E2A26';
+        opt.style.background = '#282420';
+      });
+
+      // Highlight selected
+      this.style.borderColor = 'var(--amber)';
+      this.style.background = 'rgba(184,92,0,0.15)';
+      selectedAnswer = idx;
+    });
+  });
+
+  // Check answer button
+  document.getElementById('quiz-check-btn').addEventListener('click', function() {
+    if (selectedAnswer === null) {
+      alert('Sila pilih jawapan terlebih dahulu');
+      return;
+    }
+
+    const q = quizData[currentQuizQuestion];
+    const options = document.querySelectorAll('.quiz-option');
+    const feedbackEl = document.getElementById('quiz-feedback');
+
+    // Disable all options
+    options.forEach(opt => opt.style.pointerEvents = 'none');
+
+    if (selectedAnswer === q.correct) {
+      // Correct answer
+      quizScore++;
+      options[selectedAnswer].style.borderColor = '#22c55e';
+      options[selectedAnswer].style.background = 'rgba(34,197,94,0.15)';
+      feedbackEl.style.background = 'rgba(34,197,94,0.15)';
+      feedbackEl.style.border = '1px solid rgba(34,197,94,0.3)';
+      feedbackEl.style.color = '#22c55e';
+      feedbackEl.innerHTML = '✅ <strong>Betul!</strong> Jawapan anda tepat.';
+    } else {
+      // Wrong answer
+      options[selectedAnswer].style.borderColor = '#ef4444';
+      options[selectedAnswer].style.background = 'rgba(239,68,68,0.15)';
+      options[q.correct].style.borderColor = '#22c55e';
+      options[q.correct].style.background = 'rgba(34,197,94,0.15)';
+      feedbackEl.style.background = 'rgba(239,68,68,0.15)';
+      feedbackEl.style.border = '1px solid rgba(239,68,68,0.3)';
+      feedbackEl.style.color = '#ef4444';
+      feedbackEl.innerHTML = '❌ <strong>Salah.</strong> Jawapan yang betul ialah <strong>' + q.options[q.correct] + '</strong>.';
+    }
+
+    feedbackEl.style.display = 'block';
+    this.style.display = 'none';
+    document.getElementById('quiz-next-btn').style.display = 'inline-flex';
+  });
+
+  // Next question button
+  document.getElementById('quiz-next-btn').addEventListener('click', function() {
+    currentQuizQuestion++;
+    selectedAnswer = null;
+    loadQuizQuestion();
+  });
+
+  // Initialize quiz when screen 7 is shown
+  if (window.location.hash === '#quiz' || currentScreen === 7) {
+    initQuiz();
+  }
+
+  // ========================================================
+  // TRANSCRIPT PARAGRAPH HIGHLIGHTING
+  // ========================================================
+  let floatingActionMenu = null;
+
+  // Create floating action menu
+  function createFloatingActionMenu() {
+    if (!floatingActionMenu) {
+      floatingActionMenu = document.createElement('div');
+      floatingActionMenu.className = 'floating-action';
+      floatingActionMenu.innerHTML = '🔖 Tandakan • 💬 Tanya AI tentang ini';
+      document.body.appendChild(floatingActionMenu);
+
+      // Click handler for the floating menu
+      floatingActionMenu.addEventListener('click', function() {
+        alert('Fungsi ini akan menandakan atau bertanya kepada AI tentang teks yang dipilih.');
+        hideFloatingAction();
+      });
+    }
+  }
+
+  function showFloatingAction(element) {
+    createFloatingActionMenu();
+    const rect = element.getBoundingClientRect();
+    floatingActionMenu.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+    floatingActionMenu.style.left = (rect.left + window.scrollX) + 'px';
+    floatingActionMenu.classList.add('visible');
+  }
+
+  function hideFloatingAction() {
+    if (floatingActionMenu) {
+      floatingActionMenu.classList.remove('visible');
+    }
+  }
+
+  // Add click handlers to all transcript paragraphs
+  document.querySelectorAll('.transcript-p').forEach(para => {
+    para.addEventListener('click', function(e) {
+      e.stopPropagation();
+
+      // Remove previous highlight
+      document.querySelectorAll('.transcript-p').forEach(p => p.classList.remove('highlighted'));
+
+      // Highlight clicked paragraph
+      this.classList.add('highlighted');
+
+      // Show floating action
+      showFloatingAction(this);
+    });
+  });
+
+  // Hide floating action when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.transcript-p') && !e.target.closest('.floating-action')) {
+      hideFloatingAction();
+      document.querySelectorAll('.transcript-p').forEach(p => p.classList.remove('highlighted'));
+    }
+  });
+</script>
+</body>
+</html>

@@ -8,8 +8,6 @@ Strategy 3: Gemini Vision OCR (scanned/image-based PDFs)
 import io
 import os
 import base64
-import pdfplumber
-import fitz  # PyMuPDF
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,14 +15,15 @@ load_dotenv()
 
 def _ocr_with_gemini(file_bytes: bytes, total_pages: int) -> str:
     """Render each PDF page as an image and OCR via Gemini Vision."""
-    import google.generativeai as genai
+    import fitz  # PyMuPDF
+    from google import genai
+    from google.genai import types
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set")
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=api_key)
 
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     extracted = []
@@ -40,16 +39,14 @@ def _ocr_with_gemini(file_bytes: bytes, total_pages: int) -> str:
         img_bytes = pix.tobytes("jpeg")
         img_b64 = base64.b64encode(img_bytes).decode()
 
-        response = model.generate_content([
-            {
-                "inline_data": {
-                    "mime_type": "image/jpeg",
-                    "data": img_b64
-                }
-            },
-            "Extract ALL text from this image exactly as it appears. "
-            "Return only the extracted text, no commentary."
-        ])
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                types.Part(inline_data=types.Blob(mime_type="image/jpeg", data=img_bytes)),
+                "Extract ALL text from this image exactly as it appears. "
+                "Return only the extracted text, no commentary."
+            ],
+        )
         text = response.text.strip() if response.text else ""
         if text:
             extracted.append(f"[Halaman {i + 1}]\n{text}")
@@ -63,6 +60,9 @@ def extract_text_from_pdf(file_bytes: bytes) -> dict:
     Extracts all text from a PDF file.
     Tries pdfplumber → PyMuPDF → Gemini Vision OCR.
     """
+    import pdfplumber
+    import fitz  # PyMuPDF
+
     # --- Strategy 1: pdfplumber ---
     try:
         with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:

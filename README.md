@@ -175,15 +175,15 @@ ollama pull qwen3:8b       # Download the model (~5GB)
 
 ```bash
 cd backend
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Optional — enhanced NLP distractor generation
+# Optional — enhanced NLP distractor generation![1778130693034](image/README/1778130693034.png)![1778130697988](image/README/1778130697988.png)![1778130699112](image/README/1778130699112.png)![1778130699386](image/README/1778130699386.png)![1778130699573](image/README/1778130699573.png)![1778130700605](image/README/1778130700605.png)![1778130767128](image/README/1778130767128.png)
 pip install spacy && python -m spacy download en_core_web_sm
 
 # Start the API server
-uvicorn main:app --reload
+uvicorn main:app --reload --reload-dir routers --reload-dir services
 # API: http://localhost:8000
 # Docs: http://localhost:8000/docs
 ```
@@ -224,7 +224,7 @@ brew install cloudflared
 ollama serve
 
 # Terminal 2 — Backend
-cd backend && source venv/bin/activate && uvicorn main:app --reload
+cd backend && source venv/bin/activate && uvicorn main:app --reload --reload-dir routers --reload-dir services
 
 # Terminal 3 — Frontend
 cd frontend && npm run dev
@@ -283,162 +283,66 @@ Share this link — testers can open it on any phone or laptop without any extra
 | POST | `/api/nota` | Save a session |
 | DELETE | `/api/nota/{idNota}` | Delete a session |
 
-
 ---
 
-## 📁 Project Structure
+## ⚡ Startup Performance
 
-```
-DeepLearner_OS/
-├── backend/              Python FastAPI + AI pipeline
-│   ├── main.py
-│   ├── firebase_config.py
-│   ├── requirements.txt
-│   ├── .env.example
-│   ├── routers/
-│   │   ├── transkripsi.py
-│   │   ├── ringkasan.py
-│   │   ├── kuiz.py
-│   │   └── nota.py
-│   └── services/
-│       ├── whisper_service.py
-│       ├── summarizer.py
-│       └── quiz_generator.py
-│
-└── frontend/             React + Vite app
-    └── src/
-        ├── App.jsx
-        ├── firebase.js
-        ├── index.css
-        ├── pages/
-        │   ├── Login.jsx
-        │   ├── Register.jsx
-        │   ├── Dashboard.jsx
-        │   ├── AudioInput.jsx
-        │   ├── Transcript.jsx
-        │   ├── Summary.jsx
-        │   ├── Quiz.jsx
-        │   └── History.jsx
-        └── components/
-            └── Navbar.jsx
-```
+### What was slow and why it was fixed
 
----
+| Culprit | Cold cost | Fix applied |
+|---|---|---|
+| `spacy` + `torch` imported at module load in `quiz_generator.py` | **~3.7 s** | Made fully lazy — imported only when the NLP fallback is actually called |
+| `@app.on_event("startup")` tried to load `en_core_web_sm` (not installed) | wasted attempt | Removed the startup hook entirely |
+| `pdfplumber` + `PyMuPDF` imported at module level in `pdf_extractor.py` | **~0.7 s** | Moved imports inside `extract_text_from_pdf()` — free unless a PDF is uploaded |
+| Vite forced `react`, `react-dom`, `axios`, `lucide-react` into prebundle | extra scan on cold start | Removed from `optimizeDeps.include` — Vite handles them fine on its own |
+| Stale `.vite/deps 2/3/4/5` cache dirs (macOS rename duplicates) | cache thrash | Deleted |
 
-## 🚀 Setup Guide
+**Expected result:** backend cold start drops from ~5 s → ~1 s; Vite cold start drops from ~20–30 s → ~5 s.
 
-### Step 1: Firebase Setup (MUST DO FIRST)
+### Frontend — Node.js version and patches
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project → **"deeplearner-os"**
-3. Enable these services:
-   - **Authentication** → Sign-in method → Email/Password ✓
-   - **Firestore Database** → Create database → Start in test mode
-   - **Storage** → Get started → Test mode
-4. Get your **Web App config**:
-   - Project Settings → General → Your apps → Add app → Web
-   - Copy the config object
-5. Get your **Service Account Key**:
-   - Project Settings → Service accounts → Generate new private key
-   - Download the JSON → place it in `backend/` as `serviceAccountKey.json`
-
----
-
-### Step 2: Configure Frontend Firebase
-
-Edit `frontend/src/firebase.js` — replace placeholders with your config:
-
-```js
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-```
-
----
-
-### Step 3: Setup Backend (Python)
+The project requires **Node.js v22 via Homebrew**. Node v24 breaks ESM/CJS interop.
 
 ```bash
-cd backend
-cp .env.example .env
-# Edit .env with your Firebase Storage bucket name
-
-python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Start the API server
-uvicorn main:app --reload
-# API runs at: http://localhost:8000
-# API docs at: http://localhost:8000/docs
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+cd frontend && npm run dev
 ```
 
-> ⚠️ **First run will download AI models (~1GB)** — Whisper and BART/T5. Be patient!
+Two patches must survive every `npm install` (re-apply manually if broken):
 
----
+**1. `node_modules/enhanced-resolve/esm-index.mjs`** — `createRequire` wrapper  
+**2. `node_modules/postcss/lib/parse.js` lines 5-6** — unwrap `_Parser` namespace object
 
-### Step 4: Run Frontend
+These fix lazy getter / CJS cache corruption bugs specific to Node 22 + Vite 6.
+
+### Renaming the project directory (recommended)
+
+The space in `DeepLearner_OS 2` is the root cause of the stale `deps 2/3/4/5` directories — macOS renames Vite's atomic cache swap when the path contains a space. Rename the directory to `DeepLearner_OS_v2` to prevent recurrence:
 
 ```bash
-cd frontend
-npm install
-npm run dev
-# App runs at: http://localhost:5173
+mv "DeepLearner_OS 2" DeepLearner_OS_v2
 ```
----
-
-Backend is running. Now start the tunnel:
-npx localtunnel --port 8000 --subdomain deeplearner-api
-
-curl -s https://ipv4.icanhazip.com
-
-When it shows the password page, the password is your IP from:
-
-After that, deep-learner-os.vercel.app should be fully functional — the Vercel frontend will connect to your M4 backend through the tunnel.
----
-
-## 🧪 Test the Full Flow
-
-1. Register with your matric no. → Login
-2. Click **Input Audio** → Record or upload a `.wav`/`.mp3` file
-3. Click **Jana Transkripsi** → Wait for Whisper to process
-4. View the transcript → Click **Jana Ringkasan**
-5. View summary → Click **Jana Kuiz MCQ**
-6. Answer the quiz → See your score!
-7. Save notes → View in **Sejarah**
 
 ---
 
-## 🛠️ Tech Stack
+## 🔧 Troubleshooting
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite |
-| Styling | Vanilla CSS (dark theme) |
-| Backend | Python 3.10+ + FastAPI |
-| Database | Firebase Firestore |
-| Auth | Firebase Authentication |
-| Storage | Firebase Storage |
-| Transcription | OpenAI Whisper + Malaya |
-| Summarization | facebook/bart-large-cnn (HuggingFace) |
-| Quiz | Custom NLP pipeline |
-| PDF Export | jsPDF |
+### "Failed to extract PDF" Error
+If you encounter a "Failed to extract PDF" error when uploading a PDF file, it likely means the required local PDF parsing libraries are missing from your Python virtual environment.
 
-Improving Quiz Generation Logic 
-1. Install the Required Libraries
-Open your terminal and install the Google AI SDK along with python-dotenv (the library that reads your hidden file):
-
-Bash
-pip install google-generativeai python-dotenv
-GEMINI_API_KEY=gen-lang-client-0229853464
-
-push to git 
-
-cd "/Users/nowh/Documents/DeepLearner_OS 2"
-git remote add origin https://github.com/JahadNoah/DeepLearner-OS.git
-git push -u origin main
+**How to fix:**
+1. Ensure your backend virtual environment is activated:
+   ```bash
+   cd backend
+   source venv/bin/activate  # (On Windows: venv\Scripts\activate)
+   ```
+2. Install the necessary libraries:
+   ```bash
+   pip install pdfplumber pymupdf
+   ```
+   *(Note: These have already been added to requirements.txt, so `pip install -r requirements.txt` will also work in the future.)*
+3. Restart your FastApi backend server:
+   ```bash
+   uvicorn main:app --reload --reload-dir routers --reload-dir services
+   ```
+4. **Scanned PDFs**: If you are trying to upload a scanned PDF (where pages are just images), make sure you have added your `GEMINI_API_KEY` to the `backend/.env` file. The backend will use Gemini Vision OCR as a fallback automatically.

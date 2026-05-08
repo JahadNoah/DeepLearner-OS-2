@@ -2,7 +2,6 @@
 Whisper + Malaya Transcription Service
 Supports Bahasa Melayu (BM) and English audio files.
 """
-import whisper
 import os
 from dotenv import load_dotenv
 
@@ -13,6 +12,7 @@ _model = None
 def get_whisper_model():
     global _model
     if _model is None:
+        import whisper
         model_size = os.getenv("WHISPER_MODEL", "base")
         print(f"Loading Whisper model: {model_size}...")
         _model = whisper.load_model(model_size)

@@ -50,8 +50,14 @@ export default function Login() {
         }
     };
 
+    const VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4";
+
     return (
-        <div className="split-auth">
+        <div className="split-auth split-auth--glass">
+            {/* ── Video background ── */}
+            <video className="split-auth-glass-video" src={VIDEO_URL} autoPlay muted loop playsInline />
+            <div className="split-auth-glass-overlay" />
+
             {/* ── Left branding panel ── */}
             <div className="split-auth-left">
                 <div className="split-auth-left-orb split-auth-orb-1" />

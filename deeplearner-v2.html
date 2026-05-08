@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeepLearner AI — Belajar Lebih Pintar</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cyan:#00e5ff;--cyan-dim:rgba(0,229,255,0.15);--cyan-glow:rgba(0,229,255,0.4);
+  --purple:#7b5ea7;--green:#00e676;
+  --glass-bg:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.1);
+  --glass-hover:rgba(255,255,255,0.08);
+  --text-primary:#f0f4f8;--text-muted:rgba(240,244,248,0.5);
+  --radius:20px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:#030a0e;color:var(--text-primary);overflow-x:hidden;min-height:100vh}
+
+/* ── BG ── */
+#bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0.35;pointer-events:none}
+#bg-fallback{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(ellipse 80% 60% at 20% 20%,rgba(0,80,100,0.5) 0%,transparent 60%),
+  radial-gradient(ellipse 60% 50% at 80% 80%,rgba(60,20,100,0.4) 0%,transparent 60%),
+  linear-gradient(135deg,#030a0e 0%,#061520 50%,#080510 100%);
+  pointer-events:none}
+#particle-canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+/* ── GRID PATTERN (hero only) ── */
+.hero-grid{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,229,255,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 30%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 30%,transparent 100%);
+}
+
+main{position:relative;z-index:2}
+
+/* ── NAVBAR ── */
+nav{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  width:calc(100% - 48px);max-width:1100px;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+  background:rgba(3,10,14,0.7);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border);border-radius:100px;
+  transition:all 0.3s ease
+}
+nav.scrolled{background:rgba(3,10,14,0.9);border-color:rgba(0,229,255,0.2);box-shadow:0 0 30px rgba(0,229,255,0.08)}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-0.02em;color:#fff;display:flex;align-items:center;gap:8px}
+.nav-logo span{color:var(--cyan)}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{color:var(--text-muted);text-decoration:none;font-size:.875rem;transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.btn-ghost{background:none;border:1px solid var(--glass-border);color:var(--text-muted);padding:8px 18px;border-radius:100px;font-size:.85rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:rgba(255,255,255,.3);color:#fff}
+.btn-primary{background:var(--cyan);color:#000;border:none;padding:8px 20px;border-radius:100px;font-size:.85rem;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(0,229,255,0.3)}
+.btn-primary:hover{background:#fff;box-shadow:0 0 30px rgba(0,229,255,0.5);transform:translateY(-1px)}
+
+/* Hamburger */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text-muted);border-radius:2px;transition:all .3s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+.mobile-menu{
+  display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);
+  width:calc(100% - 48px);max-width:1100px;z-index:99;
+  background:rgba(3,10,14,0.95);backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border);border-radius:20px;
+  padding:24px;flex-direction:column;gap:16px
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:var(--text-muted);text-decoration:none;font-size:1rem;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);transition:color .2s}
+.mobile-menu a:hover{color:#fff}
+.mobile-menu .mobile-btns{display:flex;gap:10px;margin-top:8px}
+.mobile-menu .mobile-btns button{flex:1}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:120px 24px 80px;
+  position:relative;overflow:hidden
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25);
+  border-radius:100px;padding:6px 16px;font-size:.75rem;font-weight:500;
+  color:var(--cyan);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:32px;animation:fadeSlideDown .8s ease both
+}
+.badge-dot{width:6px;height:6px;background:var(--cyan);border-radius:50%;box-shadow:0 0 8px var(--cyan);animation:pulse 1.5s ease infinite}
+.hero h1{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(3rem,8vw,6rem);
+  font-weight:800;line-height:1.05;letter-spacing:-.035em;
+  margin-bottom:24px;animation:fadeSlideDown .8s .1s ease both
+}
+.hero h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 40px rgba(0,229,255,.4)}
+/* Typing cursor */
+.typing-cursor{display:inline-block;width:3px;height:.85em;background:var(--cyan);margin-left:4px;vertical-align:middle;animation:blink .8s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hero p{max-width:520px;font-size:1.05rem;line-height:1.7;color:var(--text-muted);margin-bottom:40px;font-weight:300;animation:fadeSlideDown .8s .2s ease both}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeSlideDown .8s .3s ease both}
+.btn-hero-primary{display:flex;align-items:center;gap:8px;background:var(--cyan);color:#000;border:none;padding:14px 28px;border-radius:100px;font-size:.95rem;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 0 30px rgba(0,229,255,.35)}
+.btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,229,255,.55)}
+.btn-hero-outline{display:flex;align-items:center;gap:8px;background:var(--glass-bg);backdrop-filter:blur(10px);color:#fff;border:1px solid var(--glass-border);padding:14px 28px;border-radius:100px;font-size:.95rem;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .25s}
+.btn-hero-outline:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);transform:translateY(-2px)}
+.hero-stats{display:flex;gap:40px;margin-top:64px;animation:fadeSlideDown .8s .45s ease both;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center;position:relative}
+.stat+.stat::before{content:'';position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:1px;height:30px;background:var(--glass-border)}
+.stat-num{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;color:#fff}
+.stat-num span{color:var(--cyan)}
+.stat-label{font-size:.78rem;color:var(--text-muted);margin-top:2px}
+
+/* ── SECTION COMMON ── */
+section{padding:100px 24px;max-width:1100px;margin:0 auto}
+.section-tag{font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:block}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:14px}
+.section-sub{color:var(--text-muted);font-size:.95rem;line-height:1.7;max-width:480px;font-weight:300;margin-bottom:56px}
+
+/* ── GLASS CARD ── */
+.glass{background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);transition:all .3s ease}
+.glass:hover{background:var(--glass-hover);border-color:rgba(0,229,255,.2);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 30px rgba(0,229,255,.05)}
+.bento-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent);opacity:0;transition:opacity .3s}
+.bento-card:hover::before{opacity:1}
+
+/* ── BENTO ── */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:minmax(140px,auto);gap:16px}
+.bento-card{padding:28px;position:relative;overflow:hidden}
+.c-span-7{grid-column:span 7}.c-span-5{grid-column:span 5}.c-span-4{grid-column:span 4}.c-span-3{grid-column:span 3}
+.c-span-8{grid-column:span 8}.c-span-6{grid-column:span 6}.c-span-12{grid-column:span 12}
+.r-span-2{grid-row:span 2}
+.card-icon{width:44px;height:44px;border-radius:12px;background:var(--cyan-dim);border:1px solid rgba(0,229,255,.2);display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:1.2rem;flex-shrink:0;color:var(--cyan)}
+.card-icon svg{width:22px;height:22px;stroke:url(#cyan-glow-grad);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px rgba(0,229,255,0.4));transition:all .3s ease}
+.bento-card:hover .card-icon svg{transform:scale(1.1);filter:drop-shadow(0 0 8px rgba(0,229,255,0.6))}
+.step-card:hover .card-icon svg{transform:scale(1.1);filter:drop-shadow(0 0 8px rgba(0,229,255,0.6))}
+.card-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:8px;letter-spacing:-.01em}
+.card-desc{font-size:.85rem;color:var(--text-muted);line-height:1.65;font-weight:300}
+.card-flex{display:flex;gap:24px;align-items:center}
+.card-flex .card-icon{margin-bottom:0}
+
+/* Waveform */
+.wave-bars{display:flex;align-items:flex-end;gap:3px;height:40px;margin-top:20px}
+.wave-bar{width:4px;border-radius:2px;animation:wave 1.2s ease-in-out infinite alternate}
+.wave-bar:nth-child(1){background:#00e5ff;animation-delay:0s;height:30%}
+.wave-bar:nth-child(2){background:#00e5ff;animation-delay:.1s;height:70%}
+.wave-bar:nth-child(3){background:#4fc3f7;animation-delay:.2s;height:90%}
+.wave-bar:nth-child(4){background:#4fc3f7;animation-delay:.15s;height:50%}
+.wave-bar:nth-child(5){background:#7b5ea7;animation-delay:.3s;height:80%}
+.wave-bar:nth-child(6){background:#7b5ea7;animation-delay:.05s;height:60%}
+.wave-bar:nth-child(7){background:#00e676;animation-delay:.25s;height:40%}
+.wave-bar:nth-child(8){background:#00e676;animation-delay:.1s;height:75%}
+.wave-bar:nth-child(9){background:#00e5ff;animation-delay:.35s;height:55%}
+.wave-bar:nth-child(10){background:#00e5ff;animation-delay:.18s;height:85%}
+.wave-bar:nth-child(11){background:#4fc3f7;animation-delay:.28s;height:40%}
+.wave-bar:nth-child(12){background:#4fc3f7;animation-delay:.08s;height:65%}
+@keyframes wave{from{transform:scaleY(0.3)}to{transform:scaleY(1)}}
+
+/* Progress */
+.progress-wrap{margin-top:20px}
+.progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-bottom:8px}
+.progress-bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.progress-fill{height:100%;border-radius:2px}
+.fill-cyan{background:linear-gradient(90deg,#00e5ff,#4fc3f7)}
+.fill-purple{background:linear-gradient(90deg,#7b5ea7,#b39ddb)}
+.fill-green{background:linear-gradient(90deg,#00e676,#69f0ae)}
+
+/* Archive */
+.archive-list{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.archive-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;font-size:.82rem;color:var(--text-muted);transition:all .2s}
+.archive-item:hover{background:rgba(0,229,255,.06);color:#fff;border-color:rgba(0,229,255,.15)}
+.archive-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:4px 12px;font-size:.7rem;font-weight:500;letter-spacing:.05em;color:var(--text-muted);text-transform:uppercase}
+.chip.cyan{background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.2);color:var(--cyan)}
+.chip.green{background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.2);color:var(--green)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.cta-link{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:var(--cyan);text-decoration:none;margin-top:16px;font-weight:500;transition:gap .2s}
+.cta-link:hover{gap:10px}
+
+/* ── STEPS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step-card{padding:32px;position:relative;overflow:hidden}
+.step-number{font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;color:rgba(0,229,255,.08);line-height:1;margin-bottom:16px;letter-spacing:-.05em}
+
+/* ── PRICING ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:0}
+.pricing-card{padding:36px 28px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.pricing-card.featured{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.04)}
+.pricing-card.featured::after{content:'Paling Popular';position:absolute;top:16px;right:16px;background:var(--cyan);color:#000;font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:.05em;text-transform:uppercase}
+.price-plan{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+.price-amount{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;letter-spacing:-.04em;margin-bottom:4px}
+.price-amount sub{font-size:.9rem;font-weight:400;vertical-align:middle;color:var(--text-muted)}
+.price-amount sup{font-size:1.2rem;vertical-align:top;margin-top:8px;display:inline-block}
+.price-per{font-size:.78rem;color:var(--text-muted);margin-bottom:24px}
+.price-divider{height:1px;background:var(--glass-border);margin:20px 0}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:12px;flex:1}
+.price-features li{display:flex;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--text-muted);font-weight:300}
+.price-features li.on{color:var(--text-primary)}
+.feat-check{flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem}
+.feat-check.yes{background:rgba(0,229,255,.15);color:var(--cyan)}
+.feat-check.no{background:rgba(255,255,255,.05);color:rgba(255,255,255,.2)}
+.pricing-btn{margin-top:28px;width:100%;padding:13px;border-radius:100px;font-size:.9rem;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;transition:all .25s;border:1px solid var(--glass-border);background:var(--glass-bg);color:#fff}
+.pricing-btn:hover{background:var(--glass-hover);border-color:rgba(255,255,255,.2)}
+.pricing-btn.featured-btn{background:var(--cyan);color:#000;border-color:var(--cyan);box-shadow:0 0 25px rgba(0,229,255,.3)}
+.pricing-btn.featured-btn:hover{box-shadow:0 0 40px rgba(0,229,255,.5);transform:translateY(-1px)}
+
+/* ── CTA ── */
+.cta-section{padding:80px 24px}
+.cta-inner{max-width:1100px;margin:0 auto;padding:80px 60px;text-align:center;position:relative;overflow:hidden;border-radius:28px;background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(0,229,255,.15)}
+.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:200px;background:radial-gradient(ellipse,rgba(0,229,255,.12) 0%,transparent 70%);pointer-events:none}
+.cta-badge{font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:6px}
+.cta-inner h2{font-family:'Syne',sans-serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:16px}
+.cta-inner h2 em{font-style:normal;color:var(--cyan)}
+.cta-inner p{color:var(--text-muted);font-size:.95rem;margin-bottom:36px;font-weight:300}
+.cta-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.cta-social{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px;font-size:.8rem;color:var(--text-muted)}
+.avatar-stack{display:flex}
+.avatar{width:28px;height:28px;border-radius:50%;border:2px solid #030a0e;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff}
+.avatar:first-child{margin-left:0}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:2;border-top:1px solid var(--glass-border);padding:56px 24px 32px;background:rgba(3,10,14,.8);backdrop-filter:blur(20px)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:48px;margin-bottom:48px}
+.footer-brand p{font-size:.82rem;color:var(--text-muted);line-height:1.7;max-width:220px;font-weight:300;margin-top:12px}
+.footer-col h4{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:#fff;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col a{font-size:.83rem;color:var(--text-muted);text-decoration:none;transition:color .2s}
+.footer-col a:hover{color:#fff}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:24px;border-top:1px solid rgba(255,255,255,.06);font-size:.78rem;color:var(--text-muted);flex-wrap:wrap;gap:12px}
+.footer-social{display:flex;gap:12px}
+.social-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);display:flex;align-items:center;justify-content:center;font-size:.85rem;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--text-muted)}
+.social-btn:hover{border-color:rgba(0,229,255,.3);color:var(--cyan);background:rgba(0,229,255,.06)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .c-span-7,.c-span-5,.c-span-4,.c-span-3,.c-span-8,.c-span-6,.c-span-12{grid-column:span 12}
+  .r-span-2{grid-row:span 1}
+  .card-flex{flex-direction:column;align-items:flex-start;gap:16px}
+  .steps-grid{grid-template-columns:1fr}
+  .pricing-grid{grid-template-columns:1fr}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .nav-actions .btn-ghost{display:none}
+}
+@media(max-width:600px){
+  nav{width:calc(100% - 24px);padding:12px 16px}
+  .footer-top{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;align-items:flex-start}
+  .cta-inner{padding:48px 24px}
+  .hero-stats{gap:20px}
+  .stat+.stat::before{display:none}
+  .mobile-menu{width:calc(100% - 24px)}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;visibility:hidden;">
+  <defs>
+    <linearGradient id="cyan-glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff" />
+      <stop offset="100%" stop-color="#7b5ea7" />
+    </linearGradient>
+  </defs>
+</svg>
+<div id="bg-fallback"></div>
+<canvas id="particle-canvas"></canvas>
+<video id="bg-video" autoplay muted loop playsinline>
+  <!-- <source src="your-space-video.mp4" type="video/mp4"> -->
+</video>
+
+<main>
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-logo"><div class="logo-dot"></div>DeepLearner <span>AI</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Ciri-ciri</a></li>
+    <li><a href="#how">Cara Guna</a></li>
+    <li><a href="#pricing">Harga</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-ghost">Log Masuk</button>
+    <button class="btn-primary">Daftar Percuma</button>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features">Ciri-ciri</a>
+  <a href="#how">Cara Guna</a>
+  <a href="#pricing">Harga</a>
+  <div class="mobile-btns">
+    <button class="btn-ghost" style="flex:1">Log Masuk</button>
+    <button class="btn-primary" style="flex:1">Daftar Percuma</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-badge"><div class="badge-dot"></div>Kini Tersedia — Gemini AI Dioptimumkan</div>
+  <h1>
+    Belajar Lebih<br>
+    <em id="typing-text"></em><span class="typing-cursor" id="cursor"></span>
+  </h1>
+  <p>Dari rakaman kuliah hingga kuiz interaktif — DeepLearner menukarkan audio kepada nota, ringkasan, dan ujian dalam beberapa saat.</p>
+  <div class="hero-cta">
+    <button class="btn-hero-primary">🚀 Daftar Percuma</button>
+    <button class="btn-hero-outline">Tonton Demo ▶</button>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num"><span id="c1">0</span><span>+</span></div>
+      <div class="stat-label">Pelajar Malaysia</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span id="c2">0</span><span>%</span></div>
+      <div class="stat-label">Ketepatan Transkripsi</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><span id="c3">0</span><span>x</span></div>
+      <div class="stat-label">Lebih Cepat Faham</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">BM<span>+EN</span></div>
+      <div class="stat-label">Dwi Bahasa</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <span class="section-tag reveal">Semua Dalam Satu Platform</span>
+  <h2 class="section-title reveal">Segala yang anda perlukan<br>untuk belajar lebih berkesan.</h2>
+  <p class="section-sub reveal">Dari audio kuliah hingga kuiz interaktif — fokus pada memahami, bukan mencatat.</p>
+  <div class="bento">
+    <div class="bento-card glass c-span-7 r-span-2 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></div>
+      <div class="card-title">Transkripsi Audio Pintar</div>
+      <div class="card-desc">Rakam kuliah atau muat naik fail audio — AI menukar ucapan kepada teks tepat dalam Bahasa Melayu dan Inggeris secara automatik.</div>
+      <div class="wave-bars">
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      </div>
+      <div class="progress-wrap" style="margin-top:24px">
+        <div class="progress-label"><span>Memproses Audio...</span><span style="color:#00e5ff">98%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-cyan" style="width:98%"></div></div>
+        <div class="progress-label"><span>Bahasa Dikesan</span><span>BM + EN</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-purple" style="width:100%"></div></div>
+      </div>
+      <div class="chips">
+        <div class="chip cyan">Real-time</div>
+        <div class="chip">AI Powered</div>
+        <div class="chip green">BM + EN</div>
+      </div>
+    </div>
+    <div class="bento-card glass c-span-5 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M7 5H3"/></svg></div>
+      <div class="card-title">Ringkasan Berkuasa AI</div>
+      <div class="card-desc">Nota panjang diringkaskan kepada poin penting dalam masa beberapa saat.</div>
+      <a href="#" class="cta-link">Cuba Sekarang →</a>
+    </div>
+    <div class="bento-card glass c-span-5 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg></div>
+      <div class="card-title">Penjana Kuiz Adaptif</div>
+      <div class="card-desc">Jana soalan MCQ berkaitan kuliah anda secara automatik. Uji pemahaman dan perkukuh ingatan.</div>
+      <div class="chips" style="margin-top:14px"><div class="chip">MCQ</div><div class="chip cyan">Adaptif</div></div>
+    </div>
+    <div class="bento-card glass c-span-5 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></div>
+      <div class="card-title">Arkib Pengetahuan</div>
+      <div class="card-desc">Semua sesi disimpan dalam pustaka nota peribadi anda.</div>
+      <div class="archive-list">
+        <div class="archive-item"><div class="archive-dot"></div>Kuliah 01 — Pengenalan Ekonomi</div>
+        <div class="archive-item"><div class="archive-dot"></div>Kuliah 02 — Permintaan & Penawaran</div>
+        <div class="archive-item"><div class="archive-dot"></div>Kuliah 03 — Keseimbangan Pasaran</div>
+      </div>
+    </div>
+    <div class="bento-card glass c-span-4 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div>
+      <div class="card-title">Sokongan PDF & Slaid</div>
+      <div class="card-desc">Muat naik nota kuliah PDF atau slaid untuk ditukar kepada ringkasan dan kuiz.</div>
+    </div>
+    <div class="bento-card glass c-span-3 reveal">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      <div class="card-title">Multi-Bahasa</div>
+      <div class="card-desc">Sokong BM dan Inggeris. Gemini AI dioptimumkan.</div>
+      <div class="chips" style="margin-top:14px"><div class="chip cyan">BM</div><div class="chip">EN</div></div>
+    </div>
+    <div class="bento-card glass c-span-12 reveal card-flex">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div>
+      <div>
+        <div class="card-title">Sejarah Pembelajaran</div>
+        <div class="card-desc">Cari, imbas semula, dan teruskan pembelajaran bila-bila masa dari mana-mana peranti. Penyegerakan awan automatik memastikan nota anda sentiasa selamat.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <span class="section-tag reveal">Mudah & Pantas</span>
+  <h2 class="section-title reveal">Cara Guna DeepLearner</h2>
+  <p class="section-sub reveal">Tiga langkah mudah untuk mengubah cara anda belajar.</p>
+  <div class="steps-grid">
+    <div class="step-card glass reveal">
+      <div class="step-number">01</div>
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></div>
+      <div class="card-title">Rakam atau Muat Naik</div>
+      <div class="card-desc">Rakam kuliah secara langsung atau muat naik fail audio/PDF yang sedia ada.</div>
+    </div>
+    <div class="step-card glass reveal" style="transition-delay:.1s">
+      <div class="step-number">02</div>
+      <div class="card-icon"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+      <div class="card-title">AI Memproses Kandungan</div>
+      <div class="card-desc">Gemini AI akan mentranskrip, meringkas, dan menjana kuiz dalam beberapa saat.</div>
+    </div>
+    <div class="step-card glass reveal" style="transition-delay:.2s">
+      <div class="step-number">03</div>
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+      <div class="card-title">Belajar Lebih Berkesan</div>
+      <div class="card-desc">Semak nota ringkas dan jawab kuiz interaktif untuk meningkatkan prestasi.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <span class="section-tag reveal">Harga</span>
+  <h2 class="section-title reveal">Pilih Pelan Yang Sesuai</h2>
+  <p class="section-sub reveal">Mulakan percuma. Naik taraf bila anda bersedia.</p>
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="pricing-card glass reveal">
+      <div class="price-plan">Percuma</div>
+      <div class="price-amount"><sup>RM</sup>0</div>
+      <div class="price-per">Selamanya percuma</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li class="on"><span class="feat-check yes">✓</span>5 transkripsi / bulan</li>
+        <li class="on"><span class="feat-check yes">✓</span>Ringkasan AI asas</li>
+        <li class="on"><span class="feat-check yes">✓</span>10 soalan kuiz / sesi</li>
+        <li><span class="feat-check no">✗</span>PDF & Slaid</li>
+        <li><span class="feat-check no">✗</span>Arkib tanpa had</li>
+        <li><span class="feat-check no">✗</span>Sokongan keutamaan</li>
+      </ul>
+      <button class="pricing-btn">Mulakan Percuma</button>
+    </div>
+    <!-- Pro (featured) -->
+    <div class="pricing-card glass featured reveal" style="transition-delay:.1s">
+      <div class="price-plan">Pro</div>
+      <div class="price-amount"><sup>RM</sup>19<sub>/bln</sub></div>
+      <div class="price-per">Billed annually · Jimat 20%</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li class="on"><span class="feat-check yes">✓</span>Transkripsi tanpa had</li>
+        <li class="on"><span class="feat-check yes">✓</span>Ringkasan AI lanjutan</li>
+        <li class="on"><span class="feat-check yes">✓</span>Kuiz adaptif penuh</li>
+        <li class="on"><span class="feat-check yes">✓</span>PDF & Slaid sokongan</li>
+        <li class="on"><span class="feat-check yes">✓</span>Arkib tanpa had</li>
+        <li><span class="feat-check no">✗</span>Sokongan keutamaan</li>
+      </ul>
+      <button class="pricing-btn featured-btn">Mulakan Pro</button>
+    </div>
+    <!-- Team -->
+    <div class="pricing-card glass reveal" style="transition-delay:.2s">
+      <div class="price-plan">Pasukan</div>
+      <div class="price-amount"><sup>RM</sup>49<sub>/bln</sub></div>
+      <div class="price-per">Sehingga 10 ahli pasukan</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li class="on"><span class="feat-check yes">✓</span>Semua ciri Pro</li>
+        <li class="on"><span class="feat-check yes">✓</span>Papan pemuka pasukan</li>
+        <li class="on"><span class="feat-check yes">✓</span>Nota dikongsi bersama</li>
+        <li class="on"><span class="feat-check yes">✓</span>Analitik penggunaan</li>
+        <li class="on"><span class="feat-check yes">✓</span>Arkib tanpa had</li>
+        <li class="on"><span class="feat-check yes">✓</span>Sokongan keutamaan 24/7</li>
+      </ul>
+      <button class="pricing-btn">Hubungi Kami</button>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-inner reveal">
+    <div class="cta-glow"></div>
+    <div class="cta-badge"><div class="badge-dot"></div>Sertai 500+ Pelajar Malaysia</div>
+    <h2>Bersedia untuk belajar<br>dengan cara lebih <em>pintar?</em></h2>
+    <p>Daftar percuma hari ini. Tiada kad kredit diperlukan.</p>
+    <div class="cta-buttons">
+      <button class="btn-hero-primary" style="font-size:1rem;padding:16px 36px">🚀 Daftar Percuma Sekarang</button>
+      <button class="btn-hero-outline" style="font-size:1rem;padding:16px 36px">Log Masuk</button>
+    </div>
+    <div class="cta-social">
+      <div class="avatar-stack">
+        <div class="avatar">A</div><div class="avatar">Z</div>
+        <div class="avatar">N</div><div class="avatar">R</div>
+      </div>
+      &nbsp; Disertai pelajar dari UiTM, UTM, UM & lebih lagi
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="nav-logo"><div class="logo-dot"></div>DeepLearner <span style="color:var(--cyan)">AI</span></div>
+        <p>Mempelopori cara belajar generasi baharu pelajar Malaysia dengan teknologi AI.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul><li><a href="#">Transkripsi</a></li><li><a href="#">Ringkasan AI</a></li><li><a href="#">Kuiz Adaptif</a></li><li><a href="#">Arkib Nota</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h4>Syarikat</h4>
+        <ul><li><a href="#">Tentang Kami</a></li><li><a href="#">Blog</a></li><li><a href="#">Kerjaya</a></li><li><a href="#">Hubungi</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h4>Undang-undang</h4>
+        <ul><li><a href="#">Dasar Privasi</a></li><li><a href="#">Terma Perkhidmatan</a></li><li><a href="#">Pematuhan</a></li></ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2024 DeepLearner AI. Semua hak terpelihara.</div>
+      <div class="footer-social">
+        <a href="#" class="social-btn">𝕏</a>
+        <a href="#" class="social-btn">in</a>
+        <a href="#" class="social-btn">gh</a>
+      </div>
+    </div>
+  </div>
+</footer>
+</main>
+
+<script>
+/* ── NAVBAR SCROLL ── */
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40));
+
+/* ── HAMBURGER ── */
+const ham = document.getElementById('hamburger');
+const mob = document.getElementById('mobile-menu');
+ham.addEventListener('click', () => {
+  ham.classList.toggle('open');
+  mob.classList.toggle('open');
+});
+mob.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  ham.classList.remove('open'); mob.classList.remove('open');
+}));
+
+/* ── TYPING EFFECT ── */
+const phrases = ['Pintar dengan AI.','Berkesan Hari Ini.','Lebih Mudah Kini.'];
+let pi = 0, ci = 0, deleting = false;
+const el = document.getElementById('typing-text');
+function type() {
+  const word = phrases[pi];
+  if (!deleting) {
+    el.textContent = word.slice(0, ++ci);
+    if (ci === word.length) { deleting = true; setTimeout(type, 1800); return; }
+  } else {
+    el.textContent = word.slice(0, --ci);
+    if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; }
+  }
+  setTimeout(type, deleting ? 55 : 95);
+}
+type();
+
+/* ── COUNT-UP STATS ── */
+function countUp(el, target, duration = 1600) {
+  let start = 0, step = target / (duration / 16);
+  const t = setInterval(() => {
+    start = Math.min(start + step, target);
+    el.textContent = Math.floor(start);
+    if (start >= target) clearInterval(t);
+  }, 16);
+}
+let counted = false;
+const statsObserver = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !counted) {
+    counted = true;
+    countUp(document.getElementById('c1'), 500);
+    countUp(document.getElementById('c2'), 98);
+    countUp(document.getElementById('c3'), 2, 800);
+  }
+}, { threshold: 0.5 });
+statsObserver.observe(document.querySelector('.hero-stats'));
+
+/* ── SCROLL REVEAL ── */
+const reveals = document.querySelectorAll('.reveal');
+const revObs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 60);
+      revObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(el => revObs.observe(el));
+
+/* ── PARTICLES ── */
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.r = Math.random() * 1.5 + 0.3;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.alpha = Math.random() * 0.5 + 0.1;
+    this.color = Math.random() > 0.7 ? '#00e5ff' : '#ffffff';
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.alpha;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+function animParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+</script>
+</body>
+</html>
