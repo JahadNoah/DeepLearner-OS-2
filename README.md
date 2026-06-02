@@ -1,5 +1,13 @@
 # DeepLearner OS 🎓
 
+run front end and backend 
+
+cd "/Users/nowh/Documents/DeepLearner_OS 2" && \
+  (cd backend && ./dev.sh &) && \
+  (export PATH="/opt/homebrew/opt/node@22/bin:$PATH" && cd frontend && npm run dev)
+
+![1779070205695](image/README/1779070205695.png)![1779070207550](image/README/1779070207550.png)![1779070208835](image/README/1779070208835.png)![1779070212026](image/README/1779070212026.png)![1779070212305](image/README/1779070212305.png)![1779070226779](image/README/1779070226779.png)![1779070227941](image/README/1779070227941.png)![1779070228249](image/README/1779070228249.png)
+
 > **Sistem Pembelajaran Aktif Berkuasa AI** — FYP D5 A203464
 
 An AI-powered active learning system that converts educational audio and PDF notes into clean transcripts, structured summaries, and higher-order MCQ quizzes — supporting both Bahasa Melayu and English.
@@ -10,11 +18,11 @@ An AI-powered active learning system that converts educational audio and PDF not
 
 | Feature | Description |
 |---|---|
-| 🎙️ Transcription | Audio → text via OpenAI Whisper, cleaned by local LLM (Ollama/Qwen) |
-| 📄 PDF Extraction | Extracts text from PDFs using pdfplumber + PyMuPDF dual-strategy |
-| ✨ Summarization | Structured Markdown summary (Pengenalan → Poin Utama → Kesimpulan) |
-| ❓ Quiz Generation | Higher-order MCQ + True/False with per-question explanations |
-| 🖼️ Multimodal Quiz | Quiz from image + text via Google Gemini 1.5 Flash |
+| 🎙️ Transcription | Audio → text via OpenAI Whisper, cleaned by Groq (Llama 3.3 70B) |
+| 📄 PDF Extraction | Extracts text from PDFs using pdfplumber + PyMuPDF dual-strategy (Gemini OCR fallback for scanned PDFs) |
+| ✨ Summarization | Structured Markdown summary (Pengenalan → Poin Utama → Kesimpulan) via Groq |
+| ❓ Quiz Generation | Higher-order MCQ + True/False with per-question explanations via Groq |
+| 🖼️ Multimodal Quiz | Quiz from image + text — Groq for text, Gemini 1.5 Flash for vision |
 | 📚 Sejarah Nota | Save, browse, and revisit past learning sessions |
 | 📤 PDF Export | Export summary as PDF via jsPDF |
 

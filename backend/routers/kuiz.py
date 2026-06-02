@@ -109,7 +109,9 @@ async def create_quiz_multimodal(
       - teks: raw text (lecture summary, notes)
       - imej: image file (slide, diagram, flowchart) — JPEG/PNG/WEBP/GIF
     At least one must be provided.
-    Uses Gemini 1.5 Flash. Falls back to NLP strategy if Gemini is unavailable.
+    Text-only input is routed through Groq (services.groq_client); image input
+    is processed by Gemini 1.5 Flash for vision/OCR. Falls back to NLP strategy
+    if both providers fail.
     """
     if not teks and not imej:
         raise HTTPException(

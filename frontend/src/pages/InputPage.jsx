@@ -4,8 +4,9 @@ import { auth } from "../firebase";
 import axios from "axios";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { 
-  FileText, UploadCloud, Info, Trash2, Bold, Sparkles, Link2, FileJson
+import {
+  FileText, UploadCloud, Info, Trash2, Bold, Sparkles, Link2, FileJson,
+  Mic, Square, Headphones
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -17,11 +18,51 @@ export default function InputPage() {
   const noMatrik = user?.email?.split("@")[0] || user?.displayName || "unknown";
 
   const [loading, setLoading] = useState(false);
+  const [progressStep, setProgressStep] = useState("");
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
   const [text, setText] = useState("");
   const fileInputRef = useRef(null);
+
+  // Audio state
+  const [audioFile, setAudioFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const audioInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const timerRef = useRef(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioFile(new File([blob], `rakaman_${Date.now()}.webm`, { type: "audio/webm" }));
+        stream.getTracks().forEach((tr) => tr.stop());
+      };
+      mr.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => setRecordingTime((s) => s + 1), 1000);
+    } catch {
+      setError(lang === "ms" ? "Tidak dapat mengakses mikrofon." : "Could not access microphone.");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    clearInterval(timerRef.current);
+    setIsRecording(false);
+  };
+
+  const formatTime = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -32,43 +73,101 @@ export default function InputPage() {
 
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
+  const parseApiError = (err, fallback) => {
+    if (!err.response || err.response.status === 502 || err.response.status === 503) {
+      return lang === "ms"
+        ? "Gagal menyambung ke pelayan AI. Sila cuba lagi."
+        : "Failed to connect to AI server. Please try again.";
+    }
+    const detail = err.response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      return detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+    }
+    if (detail) return JSON.stringify(detail);
+    return fallback;
+  };
+
+  const startProgressStream = async () => {
+    try {
+      const res = await axios.post(`${API_URL}/progress/create`);
+      const jobId = res.data.job_id;
+      const es = new EventSource(`${API_URL}/progress/${jobId}`);
+      const stepLabels = {
+        transcribing: lang === "ms" ? "Mentranskrip audio..." : "Transcribing audio...",
+        cleaning: lang === "ms" ? "Membersihkan teks..." : "Cleaning text...",
+        saving: lang === "ms" ? "Menyimpan..." : "Saving...",
+        done: lang === "ms" ? "Selesai." : "Done.",
+      };
+      es.addEventListener("progress", (e) => {
+        const data = JSON.parse(e.data);
+        setProgressStep(stepLabels[data.step] || data.label || data.step);
+      });
+      es.addEventListener("done", () => es.close());
+      es.addEventListener("error", () => es.close());
+      return { jobId, es };
+    } catch {
+      return { jobId: null, es: null };
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!text && !file) {
-      setError(lang === "ms" ? "Sila muat naik fail atau tampal teks." : "Please upload a file or paste text.");
+    if (!text && !file && !audioFile) {
+      setError(
+        lang === "ms"
+          ? "Sila muat naik fail, tampal teks, atau rakam audio."
+          : "Please upload a file, paste text, or record audio."
+      );
       return;
     }
     setError("");
+    setProgressStep("");
     setLoading(true);
-    const formData = new FormData();
 
+    // ── Audio path: POST to /api/transcribe ──
+    if (audioFile) {
+      const { jobId, es } = await startProgressStream();
+      const formData = new FormData();
+      formData.append("audio", audioFile);
+      formData.append("noMatrik", noMatrik);
+      if (jobId) formData.append("job_id", jobId);
+      try {
+        const res = await axios.post(`${API_URL}/transcribe`, formData);
+        navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
+      } catch (err) {
+        es?.close();
+        setError(
+          parseApiError(
+            err,
+            lang === "ms" ? "Gagal mentranskrip audio. Sila cuba lagi." : "Failed to transcribe audio. Please try again."
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // ── Document / Text path: POST to /api/extract-pdf ──
+    const formData = new FormData();
     if (file) {
       formData.append("dokumen", file);
-    } else if (text) {
+    } else {
       const blob = new Blob([text], { type: "text/plain" });
       const txtFile = new File([blob], "transcript.txt", { type: "text/plain" });
       formData.append("dokumen", txtFile);
     }
-
     formData.append("noMatrik", noMatrik);
     try {
       const res = await axios.post(`${API_URL}/extract-pdf`, formData);
       navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
     } catch (err) {
-      if (!err.response || err.response.status === 502 || err.response.status === 503) {
-        setError(lang === "ms" ? "Gagal menyambung ke pelayan AI. Sila cuba lagi." : "Failed to connect to AI server. Please try again.");
-      } else {
-        const detail = err.response?.data?.detail;
-        let msg = "";
-        if (typeof detail === "string") {
-          msg = detail;
-        } else if (Array.isArray(detail) && detail.length > 0) {
-          // FastAPI validation error format
-          msg = detail.map(d => d.msg || JSON.stringify(d)).join(", ");
-        } else if (detail) {
-          msg = JSON.stringify(detail);
-        }
-        setError(msg || (lang === "ms" ? "Gagal memproses dokumen. Sila cuba lagi." : "Failed to process document. Please try again."));
-      }
+      setError(
+        parseApiError(
+          err,
+          lang === "ms" ? "Gagal memproses dokumen. Sila cuba lagi." : "Failed to process document. Please try again."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -245,6 +344,78 @@ export default function InputPage() {
         </div>
       </div>
 
+      {/* THIRD ROW: Audio Kuliah */}
+      <div className="proto-card" style={{ padding: "28px 32px", marginTop: "24px", borderRadius: "24px", display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: "0 0 auto" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: isRecording ? "rgba(244,67,54,0.15)" : "rgba(184, 92, 0, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: isRecording ? "#f44336" : "var(--amber)" }}>
+            <Headphones size={24} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
+              {lang === "ms" ? "Audio Kuliah" : "Lecture Audio"}
+            </h2>
+            <div style={{ fontSize: "11px", color: "var(--proto-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>
+              MP3 · M4A · WAV · WEBM
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto", flexWrap: "wrap" }}>
+          {/* Record / Stop button */}
+          {!isRecording ? (
+            <button
+              onClick={startRecording}
+              disabled={loading}
+              style={{ background: "var(--amber)", color: "#fff", border: "none", padding: "12px 22px", borderRadius: "24px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 12px rgba(184,92,0,0.2)", transition: "transform 0.2s" }}
+              onMouseOver={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+              onMouseOut={(e) => (e.currentTarget.style.transform = "none")}
+            >
+              <Mic size={16} /> {lang === "ms" ? "Mula Rekod" : "Start Recording"}
+            </button>
+          ) : (
+            <button
+              onClick={stopRecording}
+              style={{ background: "#f44336", color: "#fff", border: "none", padding: "12px 22px", borderRadius: "24px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 12px rgba(244,67,54,0.25)" }}
+            >
+              <Square size={14} fill="currentColor" /> {lang === "ms" ? "Hentikan" : "Stop"} · {formatTime(recordingTime)}
+            </button>
+          )}
+
+          {/* Upload audio file */}
+          <button
+            onClick={() => audioInputRef.current?.click()}
+            disabled={isRecording || loading}
+            style={{ background: "var(--proto-surface2)", color: "var(--proto-text)", border: "1px solid var(--proto-border)", padding: "12px 22px", borderRadius: "24px", fontSize: "13px", fontWeight: 600, cursor: isRecording ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", opacity: isRecording ? 0.5 : 1 }}
+          >
+            <UploadCloud size={16} /> {lang === "ms" ? "Muat Naik Audio" : "Upload Audio"}
+          </button>
+          <input
+            ref={audioInputRef}
+            type="file"
+            accept="audio/*,.mp3,.m4a,.wav,.webm,.ogg,.flac"
+            hidden
+            onChange={(e) => {
+              if (e.target.files?.[0]) setAudioFile(e.target.files[0]);
+            }}
+          />
+
+          {/* Selected audio chip */}
+          {audioFile && (
+            <div style={{ background: "var(--proto-surface2)", padding: "8px 14px", borderRadius: "20px", color: "var(--proto-text)", fontSize: "12px", fontWeight: 600, border: "1px solid var(--amber)", display: "flex", alignItems: "center", gap: "8px", maxWidth: "260px" }}>
+              <Headphones size={14} color="var(--amber)" />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{audioFile.name}</span>
+              <button
+                onClick={() => setAudioFile(null)}
+                style={{ background: "transparent", border: "none", color: "var(--proto-text-3)", cursor: "pointer", padding: 0, display: "flex" }}
+                title={lang === "ms" ? "Buang" : "Remove"}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Floating Bottom Items */}
       <div style={{ position: "absolute", bottom: "32px", left: "48px", right: "48px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", pointerEvents: "none" }}>
         
@@ -289,7 +460,7 @@ export default function InputPage() {
               {lang === "ms" ? "Sedang Memproses..." : "Processing..."}
             </h3>
             <p style={{ color: "var(--proto-text-2)", fontSize: "14px" }}>
-              {lang === "ms" ? "Sila tunggu sebentar" : "Please wait a moment"}
+              {progressStep || (lang === "ms" ? "Sila tunggu sebentar" : "Please wait a moment")}
             </p>
           </div>
         </div>

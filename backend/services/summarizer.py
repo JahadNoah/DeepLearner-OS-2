@@ -6,13 +6,12 @@ Strict filtering rules applied to all strategies:
   - Removes timestamps, page markers, navigation buttons, URLs, copyright notices.
   - Language-aware: detects Bahasa Melayu vs English and labels accordingly.
 
-Three strategies:
+Two strategies:
   A. Extractive (fast, no API key needed) — noise-filtered, structured Markdown.
-  D. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
-     Requires Ollama running on OLLAMA_HOST (default: http://localhost:11434).
-  E. Google Gemini (free tier) — gemini-1.5-flash via GEMINI_API_KEY in .env.
+  B. Groq (llama-3.3-70b-versatile by default) — high-quality structured summary.
+     Requires GROQ_API_KEY in .env.
 
-summarize_text() priority: Gemini → Ollama → T5 → Extractive.
+summarize_text() priority: Groq → T5 (optional) → Extractive.
 """
 import os
 import re
@@ -162,10 +161,8 @@ def extractive_summarize(text: str, lang: str, cleaned: str, max_sentences: int 
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY E — Google Gemini (free tier)
+# STRATEGY B — Groq (llama-3.3-70b-versatile by default)
 # ═══════════════════════════════════════════════════════════════════════════
-_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
-
 _SYSTEM_PROMPT = """\
 You are an expert Educational Content Processor for the DeepLearner system.
 Transform the provided lecture transcript into a clean, structured summary.
@@ -174,7 +171,11 @@ STRICT FILTERING RULES:
 1. IGNORE TIMESTAMPS — remove all dates and times (e.g., "3/9/26, 2:14 PM").
 2. IGNORE METADATA — remove page numbers, navigation buttons (e.g., "Back", "Halaman 1").
 3. IGNORE URLs/FOOTERS — do not include links or copyright notices (e.g., "© 2026 Pandai.org").
-4. LANGUAGE — if the input is in Bahasa Melayu, ALL output must be in Bahasa Melayu.
+4. LANGUAGE — if the input is in Bahasa Melayu, ALL output MUST be in STANDARD BAHASA MELAYU MALAYSIA (the variety used in Malaysian schools and the Dewan Bahasa dan Pustaka, DBP). DO NOT use Bahasa Indonesia. Specifically:
+   - Use Malaysian spellings: "kerajaan" (not "pemerintah"), "wang" (not "uang"), "cuti" (not "libur"), "bilik" (not "kamar"), "kereta" (not "mobil"), "akhbar" (not "koran"), "pejabat" (not "kantor"), "kemudian" (not "lalu/terus" in the Indo sense), "menggunakan" (not "memakai"), "boleh" (not "bisa"), "sahaja" (not "saja"), "manakala" (not "sedangkan"), "ialah" / "adalah" (not "merupakan" overused as Indo style), "mengapa" (not "kenapa" in formal text), "bagaimana" (not "gimana"), "ini" / "itu" (not "nih" / "tuh").
+   - Pronouns: "anda" / "saya" / "kita" / "mereka" — NEVER "kalian", "kamu" (informal Indo), "lu", "gue".
+   - NO Indonesian particles: "lho", "deh", "kok", "sih", "banget", "nih", "tuh", "udah", "gitu", "yaudah".
+   - "di" as preposition is written separate from place ("di sekolah"); "di-" as passive prefix is attached ("dijalankan") — Malaysian standard, same as Indo orthographically but watch the vocabulary.
 5. NO DUPLICATION — do NOT repeat the topic title or any heading in the output body. Each concept appears exactly once.
 6. COMPLETE SENTENCES ONLY — every bullet must be a full sentence expressing a concept. Do NOT output bare noun phrases, department names, or section labels as bullets.
 7. IGNORE SLIDE STRUCTURE — ignore section numbers (e.g., "7.3"), slide counters (e.g., "1/2", "2/2"), and repeated subheadings.
@@ -198,72 +199,28 @@ REQUIRED OUTPUT FORMAT (Markdown only, no extra commentary):
 """
 
 
-def summarize_text_gemini(lang: str, cleaned: str) -> str:
+def summarize_text_groq(lang: str, cleaned: str) -> str:
     """
-    Strategy E: Gemini-powered summarization (free tier).
-    Uses gemini-2.0-flash via GEMINI_API_KEY in .env.
-    Returns empty string on any failure or missing key.
+    Strategy B: Groq-powered summarization (llama-3.3-70b-versatile by default).
+    Requires GROQ_API_KEY in .env. Returns '' on failure.
     """
-    if not _GEMINI_KEY:
-        return ""
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=_GEMINI_KEY)
-        lang_note = (
-            "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
-            if lang == "ms"
-            else "The input is in English."
-        )
-        prompt = f"{_SYSTEM_PROMPT}\n\n{lang_note}\n\nTranscript:\n{cleaned[:5000]}"
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=1200,
-            ),
-        )
-        result = response.text.strip()
-        return result if len(result) > 50 else ""
-    except Exception as e:
-        print(f"Gemini summarizer failed: {e}")
-        return ""
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY D — Ollama/Qwen (local LLM)
-# ═══════════════════════════════════════════════════════════════════════════
-def summarize_text_ollama(lang: str, cleaned: str) -> str:
-    """
-    Strategy D: Ollama/Qwen LLM summarization.
-    Auto-switches between tunnel and local Ollama.
-    Returns empty string on failure or if Ollama is offline.
-    """
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if not client:
-            return ""
-        lang_note = (
-            "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
-            if lang == "ms"
-            else "The input is in English."
-        )
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": f"{lang_note}\n\nTranscript:\n{cleaned[:5000]}"},
-            ],
-            options={"temperature": 0.2, "num_predict": 1200},
-        )
-        result = response["message"]["content"].strip()
-        return result if len(result) > 50 else ""
-    except Exception as e:
-        print(f"Ollama summarizer failed: {e}")
-        invalidate_cache()
-        return ""
+    from services.groq_client import chat as groq_chat
+    lang_note = (
+        "The input is in BAHASA MELAYU MALAYSIA (Malaysian Malay, DBP standard). "
+        "ALL output MUST be in Bahasa Melayu Malaysia. DO NOT use Bahasa Indonesia "
+        "vocabulary, slang, or particles (no 'kalian', 'banget', 'kok', 'sih', 'nih', "
+        "'udah', 'gitu', 'merupakan' overuse, 'pemerintah', 'uang', 'bisa', 'saja' — "
+        "use 'kerajaan', 'wang', 'boleh', 'sahaja' instead)."
+        if lang == "ms"
+        else "The input is in English."
+    )
+    result = groq_chat(
+        _SYSTEM_PROMPT,
+        f"{lang_note}\n\nTranscript:\n{cleaned[:5000]}",
+        temperature=0.3,
+        max_tokens=1200,
+    )
+    return result if result and len(result) > 50 else ""
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -324,10 +281,9 @@ def summarize_text(text: str, max_length: int = 300, min_length: int = 80) -> st
     Language detection and text cleaning are computed once and reused across all strategies.
 
     Priority:
-      1. Strategy E (Gemini) — if GEMINI_API_KEY is set in .env
-      2. Strategy D (Ollama/Qwen) — if Ollama is running locally
-      3. Strategy C (T5-small) — if USE_AI_SUMMARIZER=true in .env
-      4. Strategy A (Extractive) — always available fallback
+      1. Strategy B (Groq) — if GROQ_API_KEY is set in .env
+      2. Strategy C (T5-small) — if USE_AI_SUMMARIZER=true in .env
+      3. Strategy A (Extractive) — always available fallback
     """
     # Compute once, reuse across all strategies
     lang = detect_language(text)
@@ -335,13 +291,8 @@ def summarize_text(text: str, max_length: int = 300, min_length: int = 80) -> st
 
     use_t5 = os.getenv("USE_AI_SUMMARIZER", "false").lower() == "true"
 
-    # Strategy E — Gemini (free)
-    result = summarize_text_gemini(lang, cleaned)
-    if result:
-        return result
-
-    # Strategy D — Ollama/Qwen
-    result = summarize_text_ollama(lang, cleaned)
+    # Strategy B — Groq
+    result = summarize_text_groq(lang, cleaned)
     if result:
         return result
 

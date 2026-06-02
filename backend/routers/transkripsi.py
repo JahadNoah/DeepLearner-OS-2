@@ -45,7 +45,7 @@ async def transcribe(
         result = transcribe_audio(tmp_path, language=language if language else None)
 
         await _emit("progress", {"step": "cleaning", "label": "Membersihkan teks..."})
-        transcript_text = clean_transcript(result["text"])  # Ollama cleans noise/fillers
+        transcript_text = clean_transcript(result["text"])
         detected_lang = result["language"]
 
         await _emit("progress", {"step": "saving", "label": "Menyimpan transkripsi..."})

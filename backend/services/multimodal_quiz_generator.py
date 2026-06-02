@@ -1,14 +1,13 @@
 """
 Multimodal Quiz Generator — DeepLearner v2
-Generates higher-order MCQ questions from text, image, or text+image input
-using Google Gemini 1.5 Flash (Vision Language Model).
+Generates higher-order MCQ questions from text, image, or text+image input.
 
 Supported input modes:
-  - Text only     (e.g. a lecture summary or extracted PDF text)
-  - Image only    (e.g. a lecture slide, diagram, or flowchart)
-  - Text + Image  (both combined as one knowledge source)
+  - Text only     → routed through Groq (services.quiz_generator.generate_quiz)
+  - Image only    → Google Gemini 1.5 Flash (Vision Language Model)
+  - Text + Image  → Gemini (synthesises both as one knowledge source)
 
-Falls back to NLP-enhanced quiz_generator (Strategy A) if Gemini is unavailable.
+Falls back to NLP-enhanced quiz_generator (Strategy A) if both providers fail.
 
 Output schema per question:
   {
@@ -60,6 +59,12 @@ STRICT RULES:
    - Detect the language of the input content (Bahasa Melayu or English).
    - Generate ALL output (soalan, pilihanJawapan, jawapanBetul, penjelasan)
      in that SAME language.
+   - If the language is Bahasa Melayu, output MUST be STANDARD BAHASA MELAYU MALAYSIA
+     (DBP standard, as used in Malaysian schools). DO NOT use Bahasa Indonesia
+     vocabulary, slang, or particles. Use "kerajaan" not "pemerintah", "wang" not
+     "uang", "boleh" not "bisa", "sahaja" not "saja", "anda" not "kalian",
+     "mengapa" not "kenapa". No Indonesian particles ("lho", "deh", "kok", "sih",
+     "banget", "nih", "udah", "gitu").
 
 5. OUTPUT FORMAT:
    - Return ONLY a valid JSON array. No markdown fences, no extra text.
@@ -96,6 +101,9 @@ def _build_user_prompt(text: str, num_questions: int, has_image: bool) -> str:
     return prompt
 
 
+_LETTER_TO_INDEX = {"A": 0, "B": 1, "C": 2, "D": 3}
+
+
 def _validate_questions(data: object) -> list[dict]:
     """
     Validate and sanitise LLM output against the MCQ schema.
@@ -122,13 +130,17 @@ def _validate_questions(data: object) -> list[dict]:
         jawapan    = str(item.get("jawapanBetul", "")).strip()
         penjelasan = str(item.get("penjelasan", "")).strip()
 
-        if (
+        if not (
             soalan
             and isinstance(pilihan, list)
             and len(pilihan) == 4
             and all(isinstance(o, str) for o in pilihan)
-            and jawapan in pilihan
         ):
+            continue
+        # Remap letter answers ("A"/"B"/"C"/"D") to the full option string.
+        if jawapan.upper() in _LETTER_TO_INDEX:
+            jawapan = str(pilihan[_LETTER_TO_INDEX[jawapan.upper()]]).strip()
+        if jawapan in pilihan:
             valid.append({
                 "soalan":         soalan,
                 "pilihanJawapan": pilihan,
@@ -196,8 +208,15 @@ def generate_multimodal_quiz(
     if not text.strip() and not image_bytes:
         return []
 
-    # ── Strategy: Gemini 1.5 Flash (VLM) ────────────────────────────────
-    if _GEMINI_KEY:
+    # ── Text-only input → route through Groq (faster than Gemini text) ──
+    if not image_bytes and text.strip():
+        from services.quiz_generator import generate_quiz
+        questions = generate_quiz(text, num_questions)
+        if questions:
+            return questions[:num_questions]
+
+    # ── Image (or text+image) → Gemini 1.5 Flash (VLM) ──────────────────
+    if image_bytes and _GEMINI_KEY:
         try:
             from google import genai
             from google.genai import types

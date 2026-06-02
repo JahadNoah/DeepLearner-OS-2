@@ -2,13 +2,12 @@
 Quiz Generator Service — DeepLearner v2
 Generates higher-order MCQ questions from summary text.
 
-Three generation strategies:
+Two generation strategies:
   A. NLP-Enhanced (spaCy + heuristics) — always available, no API key needed.
-  B. Google Gemini (free tier) — Bloom's-Taxonomy-level questions via Gemini 1.5 Flash.
-  C. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
+  B. Groq (llama-3.3-70b-versatile by default) — Bloom's-Taxonomy-level questions.
 
-generate_quiz() priority: Gemini (B) → NLP (A).
-Ollama is used only for background explanation enrichment.
+generate_quiz() priority: Groq (B) → NLP (A).
+Groq is also used for background explanation enrichment.
 """
 import os
 import re
@@ -526,10 +525,8 @@ def generate_quiz_nlp(summary_text: str, num_questions: int = 5) -> List[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY B — Google Gemini (free tier)
+# STRATEGY B — Groq (llama-3.3-70b-versatile by default)
 # ═══════════════════════════════════════════════════════════════════════════
-_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
-
 _SYSTEM_PROMPT = """You are an expert educational assessment designer specialising in Bloom's Taxonomy.
 Generate Multiple Choice Questions that test conceptual understanding, application, and analysis —
 NOT simple recall or verbatim copying from the text.
@@ -540,7 +537,7 @@ Rules:
 - Distractors must represent common misconceptions or related-but-wrong concepts.
 - Cover a mix of: definition, cause-effect, application, comparison.
 - For True/False style questions: include BOTH true and false statements.
-- Match the language of the input text (Bahasa Melayu or English).
+- Match the language of the input text. If the input is in Bahasa Melayu, output MUST be STANDARD BAHASA MELAYU MALAYSIA (DBP standard, as used in Malaysian schools). DO NOT use Bahasa Indonesia vocabulary, slang, or particles. Use "kerajaan" not "pemerintah", "wang" not "uang", "boleh" not "bisa", "sahaja" not "saja", "anda" not "kalian", "mengapa" not "kenapa", "bagaimana" not "gimana". No Indonesian particles ("lho", "deh", "kok", "sih", "banget", "nih", "udah").
 - Return ONLY a valid JSON array. No markdown fences, no extra text.
 - Each object MUST include a 'penjelasan' field: explain in 1-2 sentences why the correct answer is right AND briefly why each wrong option is incorrect.
 """
@@ -570,6 +567,9 @@ def _extract_json_array(raw: str) -> list:
     return []
 
 
+_LETTER_TO_INDEX = {"A": 0, "B": 1, "C": 2, "D": 3}
+
+
 def _validate_llm_response(data: list) -> List[dict]:
     """Validate and sanitize LLM output against the expected question schema."""
     if not isinstance(data, list):
@@ -583,90 +583,48 @@ def _validate_llm_response(data: list) -> List[dict]:
         pilihan = item.get("pilihanJawapan", [])
         jawapan = item.get("jawapanBetul", "").strip()
         penjelasan = item.get("penjelasan", "").strip()
-        if soalan and isinstance(pilihan, list) and len(pilihan) in (2, 4) and jawapan in pilihan:
+        if not (soalan and isinstance(pilihan, list) and len(pilihan) in (2, 4)):
+            continue
+        # If model emitted a letter (A/B/C/D) instead of the full option text,
+        # remap it to the corresponding entry in pilihanJawapan.
+        if jawapan.upper() in _LETTER_TO_INDEX and len(pilihan) == 4:
+            idx = _LETTER_TO_INDEX[jawapan.upper()]
+            jawapan = str(pilihan[idx]).strip()
+        if jawapan in pilihan:
             valid.append({"soalan": soalan, "pilihanJawapan": pilihan, "jawapanBetul": jawapan, "penjelasan": penjelasan})
     return valid
 
 
-def generate_quiz_gemini(summary_text: str, num_questions: int = 5) -> List[dict]:
+def generate_quiz_groq(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
-    Strategy B: Gemini-powered question generation (free tier).
+    Strategy B: Groq-powered MCQ generation (llama-3.3-70b-versatile default).
     Produces higher-order thinking questions (Bloom's Taxonomy levels 2-4).
-    Uses GEMINI_API_KEY in .env.  Returns [] on any failure.
+    Requires GROQ_API_KEY in .env. Returns [] on any failure.
     """
-    if not _GEMINI_KEY:
-        return []
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=_GEMINI_KEY)
-        lang = detect_language(summary_text)
-        lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
+    from services.groq_client import chat as groq_chat
+    lang = detect_language(summary_text)
+    lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
 
-        user_prompt = (
-            f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
-            f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
-            f"Summary:\n{summary_text[:5000]}\n\n"
-            f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
-            f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
-        )
+    user_prompt = (
+        f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
+        f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
+        f"Summary:\n{summary_text[:5000]}\n\n"
+        f"CRITICAL JSON RULES:\n"
+        f"- 'pilihanJawapan' must contain the FULL ANSWER TEXT for each of the 4 options "
+        f"(NOT placeholders like 'A','B','C','D').\n"
+        f"- 'jawapanBetul' must be the EXACT, VERBATIM STRING of one of the 4 options "
+        f"(NOT a letter like 'A' or 'B'). It must match one entry in 'pilihanJawapan' character-for-character.\n"
+        f"- 'penjelasan' explains why the correct option is right and why each of the other 3 options is wrong.\n\n"
+        f"Return ONLY a valid JSON array, no markdown fences, no extra text:\n"
+        f'[{{"soalan": "<question>", "pilihanJawapan": ["<option1 full text>", "<option2 full text>", "<option3 full text>", "<option4 full text>"], "jawapanBetul": "<one of the four option strings, verbatim>", "penjelasan": "<reasoning>"}}]'
+    )
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=f"{_SYSTEM_PROMPT}\n\n{user_prompt}",
-            config=types.GenerateContentConfig(
-                temperature=0.6,
-                max_output_tokens=2048,
-            ),
-        )
-
-        parsed = _extract_json_array(response.text)
-        questions = _validate_llm_response(parsed)
-        return questions[:num_questions]
-
-    except Exception as e:
-        print(f"Gemini quiz generator failed: {e}")
+    raw = groq_chat(_SYSTEM_PROMPT, user_prompt, temperature=0.6, max_tokens=2048)
+    if not raw:
         return []
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY C — Ollama/Qwen (local LLM)
-# ═══════════════════════════════════════════════════════════════════════════
-def generate_quiz_ollama(summary_text: str, num_questions: int = 5) -> List[dict]:
-    """
-    Strategy C: Ollama/Qwen LLM question generation.
-    Auto-switches between tunnel and local Ollama.
-    Returns [] on failure or if Ollama is offline.
-    """
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if not client:
-            return []
-        lang = detect_language(summary_text)
-        lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
-        user_prompt = (
-            f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
-            f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
-            f"Summary:\n{summary_text[:3000]}\n\n"
-            f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
-            f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
-        )
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": user_prompt},
-            ],
-            options={"temperature": 0.5, "num_predict": 2000},
-        )
-        raw = response["message"]["content"]
-        parsed = _extract_json_array(raw)
-        return _validate_llm_response(parsed)[:num_questions]
-    except Exception as e:
-        print(f"Ollama quiz generator failed: {e}")
-        invalidate_cache()
-        return []
+    parsed = _extract_json_array(raw)
+    return _validate_llm_response(parsed)[:num_questions]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -687,8 +645,8 @@ No markdown fences, no extra text.
 
 def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]:
     """
-    Replace template-based penjelasan with LLM-generated reasoning.
-    Tries Ollama first, then OpenAI. Falls back to original on any error.
+    Replace template-based penjelasan with LLM-generated reasoning via Groq.
+    Falls back to the original template explanations on any error.
     Processes all questions in one batch call for efficiency.
     """
     if not questions:
@@ -706,7 +664,10 @@ def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]
     ]
     lang = detect_language(summary_text)
     lang_note = (
-        "All penjelasan MUST be written in Bahasa Melayu."
+        "All penjelasan MUST be written in STANDARD BAHASA MELAYU MALAYSIA (DBP standard). "
+        "DO NOT use Bahasa Indonesia vocabulary or slang. Use 'kerajaan' (not 'pemerintah'), "
+        "'wang' (not 'uang'), 'boleh' (not 'bisa'), 'sahaja' (not 'saja'), 'anda' (not 'kalian'), "
+        "'mengapa' (not 'kenapa'), 'bagaimana' (not 'gimana'). No Indonesian particles."
         if lang == "ms"
         else "All penjelasan must be written in English."
     )
@@ -717,43 +678,9 @@ def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]
         f'Return JSON array: [{{"index": 0, "penjelasan": "..."}}]'
     )
 
-    raw = ""
-
-    # ── Try Ollama first (auto-switches tunnel/local) ──
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if client:
-            resp = client.chat(
-                model=model,
-                messages=[
-                    {"role": "system", "content": _EXPLAIN_SYSTEM},
-                    {"role": "user",   "content": user_prompt},
-                ],
-                options={"temperature": 0.3, "num_predict": 1500},
-            )
-            raw = resp["message"]["content"].strip()
-    except Exception as e:
-        print(f"Ollama explanation enrichment failed: {e}")
-        invalidate_cache()
-
-    # ── Fall back to Gemini ──
-    if not raw and _GEMINI_KEY:
-        try:
-            from google import genai
-            from google.genai import types
-            client = genai.Client(api_key=_GEMINI_KEY)
-            resp = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=f"{_EXPLAIN_SYSTEM}\n\n{user_prompt}",
-                config=types.GenerateContentConfig(
-                    temperature=0.3,
-                    max_output_tokens=1500,
-                ),
-            )
-            raw = resp.text.strip()
-        except Exception as e:
-            print(f"Gemini explanation enrichment failed: {e}")
+    # ── Enrich via Groq ──
+    from services.groq_client import chat as groq_chat
+    raw = groq_chat(_EXPLAIN_SYSTEM, user_prompt, temperature=0.3, max_tokens=1500)
 
     if not raw:
         return questions  # keep original template explanations
@@ -821,10 +748,8 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
     Generates MCQ quiz questions from a summary text.
 
-    Priority: Strategy B (Gemini) → Strategy A (NLP).
-    Ollama is intentionally excluded from this blocking path — it runs in the
-    background via enrich_and_save() to improve explanations after the response
-    is returned to the client.
+    Priority: Strategy B (Groq) → Strategy A (NLP).
+    Background enrichment via enrich_and_save() also routes through Groq.
 
     Args:
         summary_text:  The summarized text to generate questions from.
@@ -833,8 +758,8 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     Returns:
         List of dicts with keys: soalan, pilihanJawapan, jawapanBetul, penjelasan
     """
-    # Strategy B — Gemini (fast, high-quality HOT questions)
-    questions = generate_quiz_gemini(summary_text, num_questions)
+    # Strategy B — Groq (fast, high-quality HOT questions)
+    questions = generate_quiz_groq(summary_text, num_questions)
     if len(questions) >= num_questions:
         return questions
 

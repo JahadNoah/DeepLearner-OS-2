@@ -42,22 +42,14 @@ app.include_router(progress.router, prefix="/api", tags=["Progress"])
 def health():
     return {"status": "ok"}
 
-@app.get("/health/ollama")
-def health_ollama():
-    """Shows which Ollama endpoint is active and whether the model is loaded."""
-    from services.ollama_client import get_ollama_host, probe_model, OLLAMA_MODEL, _TUNNEL_HOST, _LOCAL_HOST
-    host = get_ollama_host()
-    if not host:
-        return {"status": "offline", "tunnel": _TUNNEL_HOST, "local": _LOCAL_HOST, "model": OLLAMA_MODEL}
-    model_loaded = probe_model(host, OLLAMA_MODEL)
-    label = "tunnel" if host == _TUNNEL_HOST else "local"
-    return {
-        "status": "ready" if model_loaded else "reachable_no_model",
-        "active": label,
-        "host": host,
-        "model": OLLAMA_MODEL,
-        "model_loaded": model_loaded,
-    }
+@app.get("/health/groq")
+def health_groq():
+    """Reports whether the Groq client can be initialised and which model is active."""
+    from services.groq_client import get_groq_client, GROQ_MODEL
+    client, model = get_groq_client()
+    if not client:
+        return {"status": "offline", "model": GROQ_MODEL}
+    return {"status": "ready", "model": model}
 
 # ── Serve built React frontend (only if dist/ exists) ────────────────────────
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
