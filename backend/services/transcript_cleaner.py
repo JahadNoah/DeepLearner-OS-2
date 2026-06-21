@@ -1,17 +1,14 @@
 """
 Transcript Cleaner — DeepLearner v2
-Cleans raw Whisper transcripts using a Qwen model via Ollama.
+Cleans raw Whisper transcripts using Qwen3-32B via Groq Cloud.
 
 Removes filler words, stutters, false starts, and fixes punctuation/grammar
 while strictly preserving the speaker's original meaning and language
 (Bahasa Melayu or English — including code-switching).
 
-Auto-switches between tunnel (remote server) and local Ollama.
-
 Config via .env:
-  OLLAMA_TUNNEL=https://ollama.warisanqna.uk  (remote)
-  OLLAMA_LOCAL=http://localhost:11434           (local fallback)
-  OLLAMA_MODEL=qwen2.5:7b
+  GROQ_API_KEY=gsk_...           (required)
+  GROQ_MODEL=qwen/qwen3-32b      (default)
 """
 import re
 
@@ -29,6 +26,10 @@ STRICT RULES — follow every one without exception:
 4. PRESERVE the speaker's original meaning, tone, and all factual content exactly.
 5. PRESERVE the original language — Bahasa Melayu stays Bahasa Melayu, English
    stays English, code-switching stays code-switched. Do NOT translate.
+   If the speaker uses Bahasa Melayu, the output MUST be Bahasa Melayu Malaysia
+   (standard Dewan Bahasa dan Pustaka spelling and vocabulary) — NEVER Bahasa
+   Indonesia. For example use "kerana" not "karena", "boleh" not "bisa",
+   "anda" not "kamu/Anda", "wang" not "uang".
 6. Do NOT summarise, shorten, paraphrase, or add any new information whatsoever.
 7. Do NOT add headings, bullet points, or any formatting — output clean prose only.
 
@@ -38,11 +39,11 @@ Output ONLY the cleaned transcript text. No explanations, no commentary.
 
 def clean_transcript(raw_text: str) -> str:
     """
-    Clean a raw Whisper transcript using a local Qwen model via Ollama.
+    Clean a raw Whisper transcript using Qwen3-32B via Groq Cloud.
 
-    Sends the raw text to the local Ollama server and returns a cleaned,
-    readable version. Falls back to light rule-based normalisation if
-    Ollama is unreachable or returns an empty response.
+    Sends the raw text to Groq and returns a cleaned, readable version.
+    Falls back to light rule-based normalisation if Groq is unreachable
+    or returns an empty response.
 
     Args:
         raw_text: Raw transcript string from Whisper (may contain noise,
@@ -54,43 +55,20 @@ def clean_transcript(raw_text: str) -> str:
     if not raw_text or not raw_text.strip():
         return raw_text
 
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
+    from services.groq_service import groq_chat
 
-        client, model = get_ollama_client()
-        if not client:
-            print("[transcript_cleaner] Ollama unreachable — using light normalize.")
-            return _light_normalize(raw_text)
+    cleaned = groq_chat(
+        _SYSTEM_PROMPT,
+        raw_text.strip(),
+        temperature=0.1,
+        max_tokens=4096,
+    )
 
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": raw_text.strip()},
-            ],
-            options={
-                "temperature":    0.1,
-                "repeat_penalty": 1.1,
-                "num_predict":    4096,
-            },
-        )
-
-        cleaned = response["message"]["content"].strip()
-
-        if not cleaned or len(cleaned) < 10:
-            print("[transcript_cleaner] Ollama returned empty response — using raw text.")
-            return _light_normalize(raw_text)
-
-        return cleaned
-
-    except ImportError:
-        print("[transcript_cleaner] 'ollama' package not installed. Run: pip install ollama")
+    if not cleaned or len(cleaned) < 10:
+        print("[transcript_cleaner] Groq unavailable/empty — using light normalize.")
         return _light_normalize(raw_text)
 
-    except Exception as e:
-        print(f"[transcript_cleaner] Ollama failed ({type(e).__name__}: {e}) — using raw text.")
-        invalidate_cache()
-        return _light_normalize(raw_text)
+    return cleaned
 
 
 # ─── Light Normaliser (fallback when Ollama is offline) ─────────────────────

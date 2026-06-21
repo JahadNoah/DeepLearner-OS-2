@@ -1,0 +1,387 @@
+{
+  "/Users/nowh/Documents/DeepLearner_OS 2/.claude/settings.local.json": {
+    "mtime": 1778151978.6097333,
+    "ast_hash": "b97aac2a4b393dfb6208baa470e71a0b",
+    "semantic_hash": "b97aac2a4b393dfb6208baa470e71a0b"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/firebase_config.py": {
+    "mtime": 1774656954.0066667,
+    "ast_hash": "0d7156de7aa72d367e990c88aa12bb61",
+    "semantic_hash": "0d7156de7aa72d367e990c88aa12bb61"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/main.py": {
+    "mtime": 1780382650.8442664,
+    "ast_hash": "70ea3eeb26bf1671e238574e62d4efc6",
+    "semantic_hash": "70ea3eeb26bf1671e238574e62d4efc6"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/dokumen.py": {
+    "mtime": 1776009675.6058633,
+    "ast_hash": "482bbaa2dd680d09ff310db96d188bc6",
+    "semantic_hash": "482bbaa2dd680d09ff310db96d188bc6"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/kuiz.py": {
+    "mtime": 1780382650.845035,
+    "ast_hash": "d996eb61ffd8b5e515d140f0ba8b152e",
+    "semantic_hash": "d996eb61ffd8b5e515d140f0ba8b152e"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/nota.py": {
+    "mtime": 1772925076.0,
+    "ast_hash": "33d24291462d3c2aad6b1264f07fac1b",
+    "semantic_hash": "33d24291462d3c2aad6b1264f07fac1b"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/progress.py": {
+    "mtime": 1776009922.85691,
+    "ast_hash": "c1ebb463256a33169db224e611a6d4fc",
+    "semantic_hash": "c1ebb463256a33169db224e611a6d4fc"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/ringkasan.py": {
+    "mtime": 1776009982.6540878,
+    "ast_hash": "ccbe59e15b5fe15eb16e6e242c3a177c",
+    "semantic_hash": "ccbe59e15b5fe15eb16e6e242c3a177c"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/routers/transkripsi.py": {
+    "mtime": 1780382650.8452835,
+    "ast_hash": "a1649d4d230cbbcfc1b729f77d849b77",
+    "semantic_hash": "a1649d4d230cbbcfc1b729f77d849b77"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/multimodal_quiz_generator.py": {
+    "mtime": 1780382650.8458111,
+    "ast_hash": "5c9f0bb8c069682fac70788003ee6d39",
+    "semantic_hash": "5c9f0bb8c069682fac70788003ee6d39"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/ollama_client.py": {
+    "mtime": 1780382650.8461666,
+    "ast_hash": "12484c15878120505cf38b8db798c7f9",
+    "semantic_hash": "12484c15878120505cf38b8db798c7f9"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/pdf_extractor.py": {
+    "mtime": 1778157086.037141,
+    "ast_hash": "c1c72f0244dd07e3cab6e5440e2f8094",
+    "semantic_hash": "c1c72f0244dd07e3cab6e5440e2f8094"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/quiz_generator.py": {
+    "mtime": 1780382650.8466995,
+    "ast_hash": "49e94c369acc70bae926e93a876cc1d7",
+    "semantic_hash": "49e94c369acc70bae926e93a876cc1d7"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/summarizer.py": {
+    "mtime": 1780382650.8470747,
+    "ast_hash": "d3f6e1f4220f0e548e6e2629e2f21eb7",
+    "semantic_hash": "d3f6e1f4220f0e548e6e2629e2f21eb7"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/text_utils.py": {
+    "mtime": 1774668500.1517017,
+    "ast_hash": "23df65a9b35c9670d8c94c4861dbbecb",
+    "semantic_hash": "23df65a9b35c9670d8c94c4861dbbecb"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/transcript_cleaner.py": {
+    "mtime": 1780382650.8473685,
+    "ast_hash": "cf658c9210c641a58858f6ffe3d0d0fa",
+    "semantic_hash": "cf658c9210c641a58858f6ffe3d0d0fa"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/services/whisper_service.py": {
+    "mtime": 1780382650.8478527,
+    "ast_hash": "8f6ea1ac9bfea14f27f1936dd1155738",
+    "semantic_hash": "8f6ea1ac9bfea14f27f1936dd1155738"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/firebase.json": {
+    "mtime": 1778124791.05001,
+    "ast_hash": "2d6eaea96e1ef3f3e375e7f541c9a59f",
+    "semantic_hash": "2d6eaea96e1ef3f3e375e7f541c9a59f"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/eslint.config.js": {
+    "mtime": 1772924566.0,
+    "ast_hash": "49c8473bcfcec3aef596a5fb04a6df06",
+    "semantic_hash": "49c8473bcfcec3aef596a5fb04a6df06"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/package.json": {
+    "mtime": 1778242395.2666428,
+    "ast_hash": "96c5f3cf3c35c8febd4af1793a353625",
+    "semantic_hash": "96c5f3cf3c35c8febd4af1793a353625"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/postcss.config.mjs": {
+    "mtime": 1774426151.885658,
+    "ast_hash": "0f8aa602547b154dc06be77b007c51d2",
+    "semantic_hash": "0f8aa602547b154dc06be77b007c51d2"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/App.jsx": {
+    "mtime": 1774619238.5335066,
+    "ast_hash": "3b41c56773cbe48a6e724fd3d8260f33",
+    "semantic_hash": "3b41c56773cbe48a6e724fd3d8260f33"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/Navbar.jsx": {
+    "mtime": 1773831660.9909954,
+    "ast_hash": "82cc14fe9809136bf1e1b6473f8a02ad",
+    "semantic_hash": "82cc14fe9809136bf1e1b6473f8a02ad"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/TopHeader.jsx": {
+    "mtime": 1774427462.290263,
+    "ast_hash": "bab0504868abbb788a4f42bd87cb09cf",
+    "semantic_hash": "bab0504868abbb788a4f42bd87cb09cf"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/BackgroundLayer.jsx": {
+    "mtime": 1774420639.6686404,
+    "ast_hash": "37b7601c14ee9617b282137f9d55060e",
+    "semantic_hash": "37b7601c14ee9617b282137f9d55060e"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/FloatingNavPill.jsx": {
+    "mtime": 1773808208.0691788,
+    "ast_hash": "e7a60e4821fc7ab57722d965cc28f51f",
+    "semantic_hash": "e7a60e4821fc7ab57722d965cc28f51f"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/GradientButton.jsx": {
+    "mtime": 1773806682.4579618,
+    "ast_hash": "c03175c4b60c217a1d0458811e5da60d",
+    "semantic_hash": "c03175c4b60c217a1d0458811e5da60d"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/Sidebar.jsx": {
+    "mtime": 1777990242.623913,
+    "ast_hash": "e33df0ed2c0cf2a24eaa740f81155434",
+    "semantic_hash": "e33df0ed2c0cf2a24eaa740f81155434"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/SignInFlow.jsx": {
+    "mtime": 1773831692.8285003,
+    "ast_hash": "c86079ecec55aded5bed1f67b933383e",
+    "semantic_hash": "c86079ecec55aded5bed1f67b933383e"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/ThemeToggle.jsx": {
+    "mtime": 1773688184.1807683,
+    "ast_hash": "c83bdb3224a011612e97988392d6912f",
+    "semantic_hash": "c83bdb3224a011612e97988392d6912f"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/TopbarTabs.jsx": {
+    "mtime": 1774417509.4459252,
+    "ast_hash": "7cf4ecb2f5c87663b40e956f48cad455",
+    "semantic_hash": "7cf4ecb2f5c87663b40e956f48cad455"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/TranscriptInputPanel.jsx": {
+    "mtime": 1774417509.4459193,
+    "ast_hash": "3b723c9a8c32115de77ecf52fd255b01",
+    "semantic_hash": "3b723c9a8c32115de77ecf52fd255b01"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/TubelightNavbar.jsx": {
+    "mtime": 1773809344.8532043,
+    "ast_hash": "f43f62cf2e042e8e792a057a2ca4f412",
+    "semantic_hash": "f43f62cf2e042e8e792a057a2ca4f412"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/components/ui/UserProfileDropdown.jsx": {
+    "mtime": 1773809388.9343297,
+    "ast_hash": "13b82c28e38e3c2f72af909798d8168b",
+    "semantic_hash": "13b82c28e38e3c2f72af909798d8168b"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/context/LanguageContext.jsx": {
+    "mtime": 1773464724.5669825,
+    "ast_hash": "399a1f94223c415aab9843ca7b2d3518",
+    "semantic_hash": "399a1f94223c415aab9843ca7b2d3518"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/context/ThemeContext.jsx": {
+    "mtime": 1774365500.608483,
+    "ast_hash": "8ef1f8f1e5bdad7ce567779b1609aaef",
+    "semantic_hash": "8ef1f8f1e5bdad7ce567779b1609aaef"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/context/useLanguage.jsx": {
+    "mtime": 1773464724.5672991,
+    "ast_hash": "9c84aef1a55f9d540f473caae16c8f66",
+    "semantic_hash": "9c84aef1a55f9d540f473caae16c8f66"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/context/useTheme.jsx": {
+    "mtime": 1773034577.0,
+    "ast_hash": "2d8c9893ea11305f56dd33b1f889f186",
+    "semantic_hash": "2d8c9893ea11305f56dd33b1f889f186"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/firebase.js": {
+    "mtime": 1772978984.0,
+    "ast_hash": "c03e4f12236b81fdae3c901ba269aaff",
+    "semantic_hash": "c03e4f12236b81fdae3c901ba269aaff"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/i18n/translations.js": {
+    "mtime": 1776010314.8484278,
+    "ast_hash": "7f9058237e6bccdb6013eb8c87785062",
+    "semantic_hash": "7f9058237e6bccdb6013eb8c87785062"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/lib/utils.js": {
+    "mtime": 1773809349.104292,
+    "ast_hash": "e569d3972810bf81589d4d38e84f34f5",
+    "semantic_hash": "e569d3972810bf81589d4d38e84f34f5"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/main.jsx": {
+    "mtime": 1773465223.4299655,
+    "ast_hash": "8fcb49296f738d5c55098b6f3d6d4091",
+    "semantic_hash": "8fcb49296f738d5c55098b6f3d6d4091"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/AudioInput.jsx": {
+    "mtime": 1776010231.6539502,
+    "ast_hash": "58be70185570a3ab4ad880a9d0f569ab",
+    "semantic_hash": "58be70185570a3ab4ad880a9d0f569ab"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Dashboard.jsx": {
+    "mtime": 1776010257.1214151,
+    "ast_hash": "7ad93d6161b6f73f9f2df78e22650851",
+    "semantic_hash": "7ad93d6161b6f73f9f2df78e22650851"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/History.jsx": {
+    "mtime": 1773465664.2719038,
+    "ast_hash": "ea3c4869b100598801c0a0b5546cabf0",
+    "semantic_hash": "ea3c4869b100598801c0a0b5546cabf0"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/InputPage.jsx": {
+    "mtime": 1780382650.8484435,
+    "ast_hash": "54b332299b9ada98587e21ec64806f18",
+    "semantic_hash": "54b332299b9ada98587e21ec64806f18"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Landing.jsx": {
+    "mtime": 1774354799.7204466,
+    "ast_hash": "0e66508cb478ce6d1184122858a6e1e8",
+    "semantic_hash": "0e66508cb478ce6d1184122858a6e1e8"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Login.jsx": {
+    "mtime": 1773687641.0833583,
+    "ast_hash": "176e11fb2a20efbec3259ac782de844f",
+    "semantic_hash": "176e11fb2a20efbec3259ac782de844f"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Quiz.jsx": {
+    "mtime": 1776010303.7118766,
+    "ast_hash": "26f052ba0a03d7a4235f1ebcdf62017d",
+    "semantic_hash": "26f052ba0a03d7a4235f1ebcdf62017d"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Register.jsx": {
+    "mtime": 1773686729.8972516,
+    "ast_hash": "d9594d88f542da44775652ae9508b9ac",
+    "semantic_hash": "d9594d88f542da44775652ae9508b9ac"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Summary.jsx": {
+    "mtime": 1778144186.1203275,
+    "ast_hash": "af068f80397e5dec84c5c0bcfc065c6b",
+    "semantic_hash": "af068f80397e5dec84c5c0bcfc065c6b"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/pages/Transcript.jsx": {
+    "mtime": 1774434658.9270976,
+    "ast_hash": "334f8ef6999f47be22edc2fb51856da4",
+    "semantic_hash": "334f8ef6999f47be22edc2fb51856da4"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/vite.config.js": {
+    "mtime": 1778130805.8510265,
+    "ast_hash": "e16af1d9b432ba54d4f222923e3beb1f",
+    "semantic_hash": "e16af1d9b432ba54d4f222923e3beb1f"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/package.json": {
+    "mtime": 1774426657.3928447,
+    "ast_hash": "239106dd5db908a6ba83376c89803df9",
+    "semantic_hash": "239106dd5db908a6ba83376c89803df9"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/D6_DeepLearner.md": {
+    "mtime": 1776857436.7126563,
+    "ast_hash": "7403f4a0bd815f611e649d1317e00356",
+    "semantic_hash": "7403f4a0bd815f611e649d1317e00356"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/README.md": {
+    "mtime": 1780382650.8435757,
+    "ast_hash": "f6dc5318b06ccac943b297198b963e8a",
+    "semantic_hash": "f6dc5318b06ccac943b297198b963e8a"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/backend/requirements.txt": {
+    "mtime": 1780382650.8447452,
+    "ast_hash": "8674aa990f67d2adc1075c7de358617a",
+    "semantic_hash": "8674aa990f67d2adc1075c7de358617a"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/deeplearner-os-prototype.html": {
+    "mtime": 1774413780.3417602,
+    "ast_hash": "8b9e21bdf8b84fb821c753981072bc28",
+    "semantic_hash": "8b9e21bdf8b84fb821c753981072bc28"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/deeplearner-v2.html": {
+    "mtime": 1774353843.3530161,
+    "ast_hash": "151a0158cec6cda64cc640c67d1a388d",
+    "semantic_hash": "151a0158cec6cda64cc640c67d1a388d"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/PATCHES.md": {
+    "mtime": 1773757790.496198,
+    "ast_hash": "ba297427d7996774a606a3563c55479a",
+    "semantic_hash": "ba297427d7996774a606a3563c55479a"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/README.md": {
+    "mtime": 1772924566.0,
+    "ast_hash": "3f01850e9fce601d04d6dba39204c1d8",
+    "semantic_hash": "3f01850e9fce601d04d6dba39204c1d8"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/index.html": {
+    "mtime": 1774436655.787562,
+    "ast_hash": "61d8124198c34ce219619c4dbabf73e7",
+    "semantic_hash": "61d8124198c34ce219619c4dbabf73e7"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/DeepLearnerLogo1.png": {
+    "mtime": 1773830038.8523831,
+    "ast_hash": "94377e54165acf11687d013ecbbade84",
+    "semantic_hash": "94377e54165acf11687d013ecbbade84"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/DeepLearnerLogo2.png": {
+    "mtime": 1773827023.946355,
+    "ast_hash": "938c4bc85b10a6a3f83cb2894a04d8ae",
+    "semantic_hash": "938c4bc85b10a6a3f83cb2894a04d8ae"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/DeepLearnerLogo3.png": {
+    "mtime": 1773824202.3616977,
+    "ast_hash": "545100ab376955988f9cabfc4245197e",
+    "semantic_hash": "545100ab376955988f9cabfc4245197e"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/public/DeepLearnerLogo1.png": {
+    "mtime": 1773831415.8311462,
+    "ast_hash": "94377e54165acf11687d013ecbbade84",
+    "semantic_hash": "94377e54165acf11687d013ecbbade84"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/public/DeepLearnerLogo2.png": {
+    "mtime": 1773831415.8344667,
+    "ast_hash": "938c4bc85b10a6a3f83cb2894a04d8ae",
+    "semantic_hash": "938c4bc85b10a6a3f83cb2894a04d8ae"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/public/DeepLearnerLogo3.png": {
+    "mtime": 1773831415.8386407,
+    "ast_hash": "545100ab376955988f9cabfc4245197e",
+    "semantic_hash": "545100ab376955988f9cabfc4245197e"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/public/vite.svg": {
+    "mtime": 1772924566.0,
+    "ast_hash": "8e3a10e157f75ada21ab742c022d5430",
+    "semantic_hash": "8e3a10e157f75ada21ab742c022d5430"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/frontend/src/assets/react.svg": {
+    "mtime": 1772924566.0,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130693034.png": {
+    "mtime": 1778130696.5137482,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130697988.png": {
+    "mtime": 1778130701.8884523,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130699112.png": {
+    "mtime": 1778130705.1764104,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130699386.png": {
+    "mtime": 1778130705.487438,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130699573.png": {
+    "mtime": 1778130705.5861607,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130700605.png": {
+    "mtime": 1778130705.9633312,
+    "ast_hash": "4565d7906986bf3f3911a695cd3a2840",
+    "semantic_hash": "4565d7906986bf3f3911a695cd3a2840"
+  },
+  "/Users/nowh/Documents/DeepLearner_OS 2/image/README/1778130767128.png": {
+    "mtime": 1778130767.3899546,
+    "ast_hash": "7fc1ba7c17f2aa86cb5676bab902c21b",
+    "semantic_hash": "7fc1ba7c17f2aa86cb5676bab902c21b"
+  }
+}

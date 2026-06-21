@@ -2,15 +2,14 @@
 Quiz Generator Service — DeepLearner v2
 Generates higher-order MCQ questions from summary text.
 
-Three generation strategies:
+Two generation strategies:
+  G. Groq Cloud (primary) — Bloom's-Taxonomy MCQs via Qwen3-32B (GROQ_MODEL).
   A. NLP-Enhanced (spaCy + heuristics) — always available, no API key needed.
-  B. Google Gemini (free tier) — Bloom's-Taxonomy-level questions via Gemini 1.5 Flash.
-  C. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
 
-generate_quiz() priority: Gemini (B) → NLP (A).
-Ollama is used only for background explanation enrichment.
+generate_quiz() priority: Groq (G) → NLP (A).
+NLP questions ship instantly; their explanations are upgraded in the
+background via Groq (see enrich_and_save).
 """
-import os
 import re
 import json
 import random
@@ -526,10 +525,8 @@ def generate_quiz_nlp(summary_text: str, num_questions: int = 5) -> List[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY B — Google Gemini (free tier)
+# STRATEGY G — Groq Cloud (primary LLM)
 # ═══════════════════════════════════════════════════════════════════════════
-_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
-
 _SYSTEM_PROMPT = """You are an expert educational assessment designer specialising in Bloom's Taxonomy.
 Generate Multiple Choice Questions that test conceptual understanding, application, and analysis —
 NOT simple recall or verbatim copying from the text.
@@ -588,85 +585,30 @@ def _validate_llm_response(data: list) -> List[dict]:
     return valid
 
 
-def generate_quiz_gemini(summary_text: str, num_questions: int = 5) -> List[dict]:
+def generate_quiz_groq(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
-    Strategy B: Gemini-powered question generation (free tier).
+    Strategy G: Groq-powered question generation (primary).
     Produces higher-order thinking questions (Bloom's Taxonomy levels 2-4).
-    Uses GEMINI_API_KEY in .env.  Returns [] on any failure.
+    Uses Qwen3-32B (GROQ_MODEL) via GROQ_API_KEY in .env.  Returns [] on any failure.
     """
-    if not _GEMINI_KEY:
+    from services.groq_service import groq_chat
+
+    lang = detect_language(summary_text)
+    lang_label = "in Bahasa Melayu (Malaysia, standard DBP — NOT Bahasa Indonesia)" if lang == "ms" else "in English"
+
+    user_prompt = (
+        f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
+        f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
+        f"Summary:\n{summary_text[:5000]}\n\n"
+        f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
+        f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
+    )
+
+    raw = groq_chat(_SYSTEM_PROMPT, user_prompt, temperature=0.6, max_tokens=2048)
+    if not raw:
         return []
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=_GEMINI_KEY)
-        lang = detect_language(summary_text)
-        lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
-
-        user_prompt = (
-            f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
-            f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
-            f"Summary:\n{summary_text[:5000]}\n\n"
-            f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
-            f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
-        )
-
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=f"{_SYSTEM_PROMPT}\n\n{user_prompt}",
-            config=types.GenerateContentConfig(
-                temperature=0.6,
-                max_output_tokens=2048,
-            ),
-        )
-
-        parsed = _extract_json_array(response.text)
-        questions = _validate_llm_response(parsed)
-        return questions[:num_questions]
-
-    except Exception as e:
-        print(f"Gemini quiz generator failed: {e}")
-        return []
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY C — Ollama/Qwen (local LLM)
-# ═══════════════════════════════════════════════════════════════════════════
-def generate_quiz_ollama(summary_text: str, num_questions: int = 5) -> List[dict]:
-    """
-    Strategy C: Ollama/Qwen LLM question generation.
-    Auto-switches between tunnel and local Ollama.
-    Returns [] on failure or if Ollama is offline.
-    """
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if not client:
-            return []
-        lang = detect_language(summary_text)
-        lang_label = "in Bahasa Melayu" if lang == "ms" else "in English"
-        user_prompt = (
-            f"Generate exactly {num_questions} MCQ questions {lang_label} from the educational "
-            f"summary below. Each question must have exactly 4 options and one correct answer.\n\n"
-            f"Summary:\n{summary_text[:3000]}\n\n"
-            f"Return ONLY a valid JSON array, no markdown fences, no explanation:\n"
-            f'[{{"soalan": "...", "pilihanJawapan": ["A","B","C","D"], "jawapanBetul": "A", "penjelasan": "Why A is correct and why B/C/D are wrong."}}]'
-        )
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": user_prompt},
-            ],
-            options={"temperature": 0.5, "num_predict": 2000},
-        )
-        raw = response["message"]["content"]
-        parsed = _extract_json_array(raw)
-        return _validate_llm_response(parsed)[:num_questions]
-    except Exception as e:
-        print(f"Ollama quiz generator failed: {e}")
-        invalidate_cache()
-        return []
+    parsed = _extract_json_array(raw)
+    return _validate_llm_response(parsed)[:num_questions]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -687,8 +629,8 @@ No markdown fences, no extra text.
 
 def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]:
     """
-    Replace template-based penjelasan with LLM-generated reasoning.
-    Tries Ollama first, then OpenAI. Falls back to original on any error.
+    Replace template-based penjelasan with Groq-generated reasoning.
+    Falls back to the original template explanations on any error.
     Processes all questions in one batch call for efficiency.
     """
     if not questions:
@@ -717,43 +659,9 @@ def _enrich_explanations(questions: List[dict], summary_text: str) -> List[dict]
         f'Return JSON array: [{{"index": 0, "penjelasan": "..."}}]'
     )
 
-    raw = ""
-
-    # ── Try Ollama first (auto-switches tunnel/local) ──
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if client:
-            resp = client.chat(
-                model=model,
-                messages=[
-                    {"role": "system", "content": _EXPLAIN_SYSTEM},
-                    {"role": "user",   "content": user_prompt},
-                ],
-                options={"temperature": 0.3, "num_predict": 1500},
-            )
-            raw = resp["message"]["content"].strip()
-    except Exception as e:
-        print(f"Ollama explanation enrichment failed: {e}")
-        invalidate_cache()
-
-    # ── Fall back to Gemini ──
-    if not raw and _GEMINI_KEY:
-        try:
-            from google import genai
-            from google.genai import types
-            client = genai.Client(api_key=_GEMINI_KEY)
-            resp = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=f"{_EXPLAIN_SYSTEM}\n\n{user_prompt}",
-                config=types.GenerateContentConfig(
-                    temperature=0.3,
-                    max_output_tokens=1500,
-                ),
-            )
-            raw = resp.text.strip()
-        except Exception as e:
-            print(f"Gemini explanation enrichment failed: {e}")
+    # ── Enrich via Groq (primary LLM) ──
+    from services.groq_service import groq_chat
+    raw = groq_chat(_EXPLAIN_SYSTEM, user_prompt, temperature=0.3, max_tokens=1500)
 
     if not raw:
         return questions  # keep original template explanations
@@ -821,10 +729,11 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     """
     Generates MCQ quiz questions from a summary text.
 
-    Priority: Strategy B (Gemini) → Strategy A (NLP).
-    Ollama is intentionally excluded from this blocking path — it runs in the
-    background via enrich_and_save() to improve explanations after the response
-    is returned to the client.
+    Priority: Strategy G (Groq) → Strategy A (NLP).
+    Groq produces high-quality HOT questions with explanations inline. NLP
+    questions (used to top up when Groq is short) ship with template
+    explanations that are upgraded in the background via Groq in
+    enrich_and_save() after the response is returned to the client.
 
     Args:
         summary_text:  The summarized text to generate questions from.
@@ -833,8 +742,8 @@ def generate_quiz(summary_text: str, num_questions: int = 5) -> List[dict]:
     Returns:
         List of dicts with keys: soalan, pilihanJawapan, jawapanBetul, penjelasan
     """
-    # Strategy B — Gemini (fast, high-quality HOT questions)
-    questions = generate_quiz_gemini(summary_text, num_questions)
+    # Strategy G — Groq (fast, high-quality HOT questions)
+    questions = generate_quiz_groq(summary_text, num_questions)
     if len(questions) >= num_questions:
         return questions
 

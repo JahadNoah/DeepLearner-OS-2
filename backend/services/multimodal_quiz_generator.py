@@ -1,14 +1,17 @@
 """
 Multimodal Quiz Generator — DeepLearner v2
-Generates higher-order MCQ questions from text, image, or text+image input
-using Google Gemini 1.5 Flash (Vision Language Model).
+Generates higher-order MCQ questions from text, image, or text+image input.
+
+Routing:
+  - Image present  → Google Gemini 1.5 Flash (Vision Language Model) — vision only.
+  - Text only      → Groq Cloud (Qwen3-32B), the primary text LLM.
 
 Supported input modes:
   - Text only     (e.g. a lecture summary or extracted PDF text)
   - Image only    (e.g. a lecture slide, diagram, or flowchart)
   - Text + Image  (both combined as one knowledge source)
 
-Falls back to NLP-enhanced quiz_generator (Strategy A) if Gemini is unavailable.
+Falls back to NLP-enhanced quiz_generator (Strategy A) if the chosen engine fails.
 
 Output schema per question:
   {
@@ -196,8 +199,16 @@ def generate_multimodal_quiz(
     if not text.strip() and not image_bytes:
         return []
 
-    # ── Strategy: Gemini 1.5 Flash (VLM) ────────────────────────────────
-    if _GEMINI_KEY:
+    # ── Text-only → Groq (primary text LLM) ─────────────────────────────
+    if not image_bytes and text.strip():
+        from services.quiz_generator import generate_quiz_groq
+        questions = generate_quiz_groq(text, num_questions)
+        if questions:
+            return questions[:num_questions]
+        print("[multimodal_quiz] Groq returned no valid questions — falling back to NLP.")
+
+    # ── Image present → Gemini 1.5 Flash (VLM, vision only) ─────────────
+    elif image_bytes and _GEMINI_KEY:
         try:
             from google import genai
             from google.genai import types

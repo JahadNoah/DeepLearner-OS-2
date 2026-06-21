@@ -7,12 +7,11 @@ Strict filtering rules applied to all strategies:
   - Language-aware: detects Bahasa Melayu vs English and labels accordingly.
 
 Three strategies:
+  G. Groq Cloud (primary) — Qwen3-32B via GROQ_API_KEY/GROQ_MODEL in .env.
+  C. T5-small (optional legacy AI) — enabled with USE_AI_SUMMARIZER=true.
   A. Extractive (fast, no API key needed) — noise-filtered, structured Markdown.
-  D. Ollama/Qwen (local LLM) — uses OLLAMA_MODEL from .env (default: qwen3:8b).
-     Requires Ollama running on OLLAMA_HOST (default: http://localhost:11434).
-  E. Google Gemini (free tier) — gemini-1.5-flash via GEMINI_API_KEY in .env.
 
-summarize_text() priority: Gemini → Ollama → T5 → Extractive.
+summarize_text() priority: Groq → T5 → Extractive.
 """
 import os
 import re
@@ -162,10 +161,8 @@ def extractive_summarize(text: str, lang: str, cleaned: str, max_sentences: int 
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY E — Google Gemini (free tier)
+# STRATEGY G — Groq Cloud (primary LLM)
 # ═══════════════════════════════════════════════════════════════════════════
-_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
-
 _SYSTEM_PROMPT = """\
 You are an expert Educational Content Processor for the DeepLearner system.
 Transform the provided lecture transcript into a clean, structured summary.
@@ -198,72 +195,22 @@ REQUIRED OUTPUT FORMAT (Markdown only, no extra commentary):
 """
 
 
-def summarize_text_gemini(lang: str, cleaned: str) -> str:
+def summarize_text_groq(lang: str, cleaned: str) -> str:
     """
-    Strategy E: Gemini-powered summarization (free tier).
-    Uses gemini-2.0-flash via GEMINI_API_KEY in .env.
+    Strategy G: Groq Cloud summarization (primary).
+    Uses Qwen3-32B (GROQ_MODEL) via GROQ_API_KEY in .env.
     Returns empty string on any failure or missing key.
     """
-    if not _GEMINI_KEY:
-        return ""
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=_GEMINI_KEY)
-        lang_note = (
-            "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
-            if lang == "ms"
-            else "The input is in English."
-        )
-        prompt = f"{_SYSTEM_PROMPT}\n\n{lang_note}\n\nTranscript:\n{cleaned[:5000]}"
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=1200,
-            ),
-        )
-        result = response.text.strip()
-        return result if len(result) > 50 else ""
-    except Exception as e:
-        print(f"Gemini summarizer failed: {e}")
-        return ""
+    from services.groq_service import groq_chat
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STRATEGY D — Ollama/Qwen (local LLM)
-# ═══════════════════════════════════════════════════════════════════════════
-def summarize_text_ollama(lang: str, cleaned: str) -> str:
-    """
-    Strategy D: Ollama/Qwen LLM summarization.
-    Auto-switches between tunnel and local Ollama.
-    Returns empty string on failure or if Ollama is offline.
-    """
-    try:
-        from services.ollama_client import get_ollama_client, invalidate_cache
-        client, model = get_ollama_client()
-        if not client:
-            return ""
-        lang_note = (
-            "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu."
-            if lang == "ms"
-            else "The input is in English."
-        )
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": f"{lang_note}\n\nTranscript:\n{cleaned[:5000]}"},
-            ],
-            options={"temperature": 0.2, "num_predict": 1200},
-        )
-        result = response["message"]["content"].strip()
-        return result if len(result) > 50 else ""
-    except Exception as e:
-        print(f"Ollama summarizer failed: {e}")
-        invalidate_cache()
-        return ""
+    lang_note = (
+        "The input is in Bahasa Melayu. ALL output MUST be in Bahasa Melayu (Malaysia, standard DBP — NOT Bahasa Indonesia)."
+        if lang == "ms"
+        else "The input is in English."
+    )
+    user_content = f"{lang_note}\n\nTranscript:\n{cleaned[:5000]}"
+    result = groq_chat(_SYSTEM_PROMPT, user_content, temperature=0.3, max_tokens=1200)
+    return result if len(result) > 50 else ""
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -324,10 +271,9 @@ def summarize_text(text: str, max_length: int = 300, min_length: int = 80) -> st
     Language detection and text cleaning are computed once and reused across all strategies.
 
     Priority:
-      1. Strategy E (Gemini) — if GEMINI_API_KEY is set in .env
-      2. Strategy D (Ollama/Qwen) — if Ollama is running locally
-      3. Strategy C (T5-small) — if USE_AI_SUMMARIZER=true in .env
-      4. Strategy A (Extractive) — always available fallback
+      1. Strategy G (Groq/Qwen3-32B) — if GROQ_API_KEY is set in .env
+      2. Strategy C (T5-small) — if USE_AI_SUMMARIZER=true in .env
+      3. Strategy A (Extractive) — always available fallback
     """
     # Compute once, reuse across all strategies
     lang = detect_language(text)
@@ -335,13 +281,8 @@ def summarize_text(text: str, max_length: int = 300, min_length: int = 80) -> st
 
     use_t5 = os.getenv("USE_AI_SUMMARIZER", "false").lower() == "true"
 
-    # Strategy E — Gemini (free)
-    result = summarize_text_gemini(lang, cleaned)
-    if result:
-        return result
-
-    # Strategy D — Ollama/Qwen
-    result = summarize_text_ollama(lang, cleaned)
+    # Strategy G — Groq (primary)
+    result = summarize_text_groq(lang, cleaned)
     if result:
         return result
 
