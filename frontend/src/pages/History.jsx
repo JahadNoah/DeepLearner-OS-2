@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/fire
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { FileText, Trash2, Inbox } from "lucide-react";
+import { FileText, Trash2, Inbox, Plus, Search } from "lucide-react";
 
 export default function History() {
     const [notes, setNotes] = useState([]);
@@ -60,74 +60,97 @@ export default function History() {
     const formatDate = (ts) => {
         if (!ts) return "";
         const d = ts.toDate ? ts.toDate() : new Date(ts);
-        return d.toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" });
+        return d.toLocaleDateString(lang === "ms" ? "ms-MY" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
     };
 
+    const deleteLabel = lang === "ms" ? "Padam nota" : "Delete note";
+
     return (
-        <div className="page">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+        <div className="proto-content">
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
                 <div>
-                    <h1>{t(lang, "history.heading")}</h1>
-                    <p>{t(lang, "history.subtitle")}</p>
+                    <h1 style={{ fontFamily: "var(--proto-font)", fontSize: "24px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "6px" }}>
+                        {t(lang, "history.heading")}
+                    </h1>
+                    <p style={{ color: "var(--proto-text-2)", fontSize: "14px" }}>{t(lang, "history.subtitle")}</p>
                 </div>
-                <Link to="/input" className="btn btn-primary">{t(lang, "history.newSession")}</Link>
+                <Link to="/input" className="proto-btn-primary" style={{ textDecoration: "none" }}>
+                    <Plus size={16} /> {t(lang, "history.newSession")}
+                </Link>
             </div>
 
+            {/* Error */}
             {error && (
-                <div className="error-msg" style={{ marginBottom: "1rem" }}>{error}</div>
+                <div style={{ background: "rgba(244,67,54,0.1)", border: "1px solid #f44336", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", color: "#f44336", fontSize: "13px" }}>
+                    {error}
+                </div>
             )}
 
-            <input
-                className="input"
-                placeholder={t(lang, "history.searchPlaceholder")}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{ marginBottom: "1.5rem" }}
-            />
+            {/* Search */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--proto-surface)", border: "1px solid var(--proto-border)", borderRadius: "12px", padding: "10px 16px", marginBottom: "20px", backdropFilter: "var(--proto-glass-blur)" }}>
+                <Search size={16} style={{ color: "var(--proto-text-2)" }} />
+                <input
+                    type="text"
+                    placeholder={t(lang, "history.searchPlaceholder")}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "var(--proto-text)" }}
+                />
+            </div>
 
             {loading ? (
-                <div style={{ textAlign: "center", padding: "3rem" }}>
+                <div className="proto-card" style={{ padding: "48px", textAlign: "center" }}>
                     <div className="spinner" style={{ margin: "0 auto" }} />
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-                    <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center", opacity: 0.5 }}><Inbox size={40} /></div>
-                    <h3>{t(lang, "history.emptyHeading")}</h3>
-                    <p style={{ marginTop: "0.5rem" }}>
+                <div className="proto-card" style={{ textAlign: "center", padding: "48px" }}>
+                    <div style={{ marginBottom: "16px", display: "flex", justifyContent: "center", color: "var(--proto-text-3)" }}>
+                        <Inbox size={40} />
+                    </div>
+                    <h2 style={{ fontFamily: "var(--proto-font)", fontSize: "16px", fontWeight: 700, color: "var(--proto-text)", margin: "0 0 6px" }}>
+                        {t(lang, "history.emptyHeading")}
+                    </h2>
+                    <p style={{ color: "var(--proto-text-2)", fontSize: "13px" }}>
                         {search ? t(lang, "history.emptySearch") : t(lang, "history.emptyDefault")}
                     </p>
                     {!search && (
-                        <Link to="/input" className="btn btn-primary" style={{ marginTop: "1.5rem", display: "inline-flex" }}>
+                        <Link to="/input" className="proto-btn-primary" style={{ textDecoration: "none", marginTop: "20px", display: "inline-flex" }}>
                             {t(lang, "history.emptyBtn")}
                         </Link>
                     )}
                 </div>
             ) : (
-                <div>
-                    <p style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>{t(lang, "history.resultCount", { n: filtered.length })}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <p style={{ marginBottom: "4px", fontSize: "12px", color: "var(--proto-text-2)" }}>
+                        {t(lang, "history.resultCount", { n: filtered.length })}
+                    </p>
                     {filtered.map((note) => (
-                        <div key={note.id} className="history-item">
-                            <div>
-                                <div style={{ fontWeight: 600, color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}><FileText size={14} /> {note.tajuk || t(lang, "history.untitled")}</div>
-                                <div className="history-meta">{formatDate(note.tarikhSimpan)}</div>
+                        <div key={note.id} className="proto-card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px" }}>
+                            <FileText size={16} style={{ color: "var(--amber)", flexShrink: 0 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--proto-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {note.tajuk || t(lang, "history.untitled")}
+                                </div>
+                                <div style={{ fontSize: "11px", color: "var(--proto-text-2)" }}>{formatDate(note.tarikhSimpan)}</div>
                             </div>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
-                                    onClick={() => navigate(`/summary/${note.idRingkasan}`)}
-                                >
-                                    {t(lang, "history.viewBtn")}
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
-                                    disabled={deleting === note.id}
-                                    onClick={() => handleDelete(note.id)}
-                                >
-                                    {deleting === note.id ? "..." : <Trash2 size={14} />}
-                                </button>
-                            </div>
+                            <button
+                                className="proto-btn-outline"
+                                style={{ padding: "8px 14px", fontSize: "12px" }}
+                                onClick={() => navigate(`/summary/${note.idRingkasan}`)}
+                            >
+                                {t(lang, "history.viewBtn")}
+                            </button>
+                            <button
+                                className="proto-btn-ghost"
+                                style={{ padding: "8px 10px", fontSize: "12px", color: "#f44336" }}
+                                disabled={deleting === note.id}
+                                onClick={() => handleDelete(note.id)}
+                                aria-label={deleteLabel}
+                                title={deleteLabel}
+                            >
+                                {deleting === note.id ? "..." : <Trash2 size={14} />}
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -135,4 +158,3 @@ export default function History() {
         </div>
     );
 }
-

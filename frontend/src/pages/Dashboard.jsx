@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -31,6 +31,19 @@ export default function Dashboard() {
   const [recentNotes, setRecentNotes] = useState([]);
   const [lastSession, setLastSession] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef(null);
+
+  // ⌘K / Ctrl+K focuses the search box
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Fetch stats
   useEffect(() => {
@@ -112,6 +125,7 @@ export default function Dashboard() {
         }}>
           <Search size={16} style={{ color: "var(--proto-text-2)" }} />
           <input
+            ref={searchRef}
             type="text"
             placeholder={lang === "ms" ? "Cari nota..." : "Search notes..."}
             value={searchQuery}
