@@ -21,7 +21,13 @@ export default function InputPage() {
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
   const [text, setText] = useState("");
+  const [language, setLanguage] = useState("ms");
   const fileInputRef = useRef(null);
+
+  // Audio files route to the transcription pipeline (/transcribe); everything
+  // else (PDF/PPTX/DOCX/pasted text) goes to the document extractor (/extract-pdf).
+  const AUDIO_EXT = /\.(wav|mp3|m4a|aac|ogg|oga|flac|webm|mp4|mpeg|mpga)$/i;
+  const isAudioFile = (f) => !!f && (f.type.startsWith("audio/") || AUDIO_EXT.test(f.name));
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -32,43 +38,58 @@ export default function InputPage() {
 
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
+  const showApiError = (err, fallback) => {
+    if (!err.response || err.response.status === 502 || err.response.status === 503) {
+      setError(lang === "ms" ? "Gagal menyambung ke pelayan AI. Sila cuba lagi." : "Failed to connect to AI server. Please try again.");
+      return;
+    }
+    const detail = err.response?.data?.detail;
+    let msg = "";
+    if (typeof detail === "string") {
+      msg = detail;
+    } else if (Array.isArray(detail) && detail.length > 0) {
+      // FastAPI validation error format
+      msg = detail.map(d => d.msg || JSON.stringify(d)).join(", ");
+    } else if (detail) {
+      msg = JSON.stringify(detail);
+    }
+    setError(msg || fallback);
+  };
+
   const handleSubmit = async () => {
     if (!text && !file) {
-      setError(lang === "ms" ? "Sila muat naik fail atau tampal teks." : "Please upload a file or paste text.");
+      setError(lang === "ms" ? "Sila muat naik fail audio/dokumen atau tampal teks." : "Please upload an audio/document file or paste text.");
       return;
     }
     setError("");
     setLoading(true);
-    const formData = new FormData();
 
-    if (file) {
-      formData.append("dokumen", file);
-    } else if (text) {
-      const blob = new Blob([text], { type: "text/plain" });
-      const txtFile = new File([blob], "transcript.txt", { type: "text/plain" });
-      formData.append("dokumen", txtFile);
-    }
-
-    formData.append("noMatrik", noMatrik);
     try {
+      // Audio → transcription pipeline
+      if (file && isAudioFile(file)) {
+        const formData = new FormData();
+        formData.append("audio", file);
+        formData.append("noMatrik", noMatrik);
+        formData.append("language", language);
+        const res = await axios.post(`${API_URL}/transcribe`, formData);
+        navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
+        return;
+      }
+
+      // Document or pasted text → extraction pipeline
+      const formData = new FormData();
+      if (file) {
+        formData.append("dokumen", file);
+      } else {
+        const blob = new Blob([text], { type: "text/plain" });
+        const txtFile = new File([blob], "transcript.txt", { type: "text/plain" });
+        formData.append("dokumen", txtFile);
+      }
+      formData.append("noMatrik", noMatrik);
       const res = await axios.post(`${API_URL}/extract-pdf`, formData);
       navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
     } catch (err) {
-      if (!err.response || err.response.status === 502 || err.response.status === 503) {
-        setError(lang === "ms" ? "Gagal menyambung ke pelayan AI. Sila cuba lagi." : "Failed to connect to AI server. Please try again.");
-      } else {
-        const detail = err.response?.data?.detail;
-        let msg = "";
-        if (typeof detail === "string") {
-          msg = detail;
-        } else if (Array.isArray(detail) && detail.length > 0) {
-          // FastAPI validation error format
-          msg = detail.map(d => d.msg || JSON.stringify(d)).join(", ");
-        } else if (detail) {
-          msg = JSON.stringify(detail);
-        }
-        setError(msg || (lang === "ms" ? "Gagal memproses dokumen. Sila cuba lagi." : "Failed to process document. Please try again."));
-      }
+      showApiError(err, lang === "ms" ? "Gagal memproses input. Sila cuba lagi." : "Failed to process input. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -127,8 +148,8 @@ export default function InputPage() {
               <FileJson size={24} /> 
             </div>
             <div>
-              <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>Dokumen & Slaid</h2>
-              <div style={{ fontSize: "11px", color: "var(--proto-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>PDF, PPTX, DOCX</div>
+              <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>Audio Kuliah & Dokumen</h2>
+              <div style={{ fontSize: "11px", color: "var(--proto-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>MP3, WAV, M4A &nbsp;·&nbsp; PDF, PPTX, DOCX</div>
             </div>
           </div>
           
@@ -168,13 +189,37 @@ export default function InputPage() {
                 PILIH FAIL
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.docx,.txt" hidden onChange={(e) => { if(e.target.files[0]) setFile(e.target.files[0]); }} />
+            <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.pdf,.pptx,.docx,.txt" hidden onChange={(e) => { if(e.target.files[0]) setFile(e.target.files[0]); }} />
           </div>
+
+          {/* Audio language selector — only relevant when an audio file is chosen */}
+          {file && isAudioFile(file) && (
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "20px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "12px", color: "var(--proto-text-2)", fontWeight: 600 }}>
+                {lang === "ms" ? "🎙️ Bahasa audio:" : "🎙️ Audio language:"}
+              </span>
+              {[["ms", "Bahasa Melayu"], ["en", "English"]].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setLanguage(val)}
+                  style={{
+                    padding: "8px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
+                    cursor: "pointer", transition: "all 0.2s",
+                    border: `1px solid ${language === val ? "var(--amber)" : "var(--proto-border)"}`,
+                    background: language === val ? "var(--amber)" : "transparent",
+                    color: language === val ? "#fff" : "var(--proto-text-2)",
+                  }}
+                >
+                  {language === val ? "✓ " : ""}{label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div style={{ background: "var(--proto-surface2)", borderRadius: "16px", padding: "16px 20px", display: "flex", gap: "12px", marginTop: "24px", alignItems: "flex-start" }}>
             <div style={{ color: "var(--amber)", marginTop: "2px", background: "rgba(184, 92, 0, 0.15)", borderRadius: "50%", padding: "4px" }}><Info size={14} style={{ display: "block" }} /></div>
             <div style={{ fontSize: "12px", color: "var(--proto-text-2)", lineHeight: 1.6, fontWeight: 500 }}>
-              AI akan mengekstrak jadual, teks, dan rujukan secara automatik daripada dokumen akademik yang kompleks.
+              Muat naik fail audio kuliah untuk transkripsi automatik, atau dokumen (PDF/PPTX/DOCX) untuk pengekstrakan teks — AI mengendalikan kedua-duanya.
             </div>
           </div>
         </div>

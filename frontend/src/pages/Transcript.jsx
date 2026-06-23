@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { auth } from "../firebase";
 import axios from "axios";
+import jsPDF from "jspdf";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { TopbarTabs } from "../components/ui/TopbarTabs";
-import { FileText, Copy, Download, Archive, Share2, Sparkles } from "lucide-react";
+import { Copy, Download, Sparkles } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -48,12 +48,6 @@ export default function Transcript() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const tabs = [
-    { label: lang === "ms" ? "Utama" : "Dashboard", path: "/app" },
-    { label: lang === "ms" ? "Sesi Baharu" : "New Session", path: "/input" },
-    { label: lang === "ms" ? "Sejarah" : "History", path: "/history" },
-  ];
-
   const handleSummarize = async () => {
     setLoading(true);
     setError("");
@@ -86,6 +80,19 @@ export default function Transcript() {
     day: "numeric", month: "long", year: "numeric",
   });
 
+  const handleExportPDF = () => {
+    const pdf = new jsPDF();
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(18);
+    pdf.text(transcript?.tajuk || (lang === "ms" ? "Transkripsi" : "Transcript"), 20, 20);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text(today, 20, 30);
+    const lines = pdf.splitTextToSize(transcript?.teksPenuh || "", 170);
+    pdf.text(lines, 20, 42);
+    pdf.save(`DeepLearner_Transkripsi_${Date.now()}.pdf`);
+  };
+
   if (!transcript) {
     return (
       <div className="proto-content">
@@ -101,8 +108,6 @@ export default function Transcript() {
 
   return (
     <>
-      <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
-
       <div className="proto-content">
         {/* Step Indicator */}
         <StepIndicator current={1} lang={lang} />
@@ -131,19 +136,6 @@ export default function Transcript() {
           <div style={{ fontSize: "12px", color: "var(--proto-text-3)" }}>
             {today} &bull; {t(lang, "proto.referenceId")}: <strong style={{ color: "var(--amber)" }}>{refId}</strong>
           </div>
-        </div>
-
-        {/* Tags */}
-        <div style={{ display: "flex", gap: "10px", margin: "16px 0", flexWrap: "wrap", justifyContent: "center" }}>
-          <span className="proto-lang-tag">
-            🌐 {t(lang, "proto.detectedLang")}:
-            <strong style={{ color: "var(--amber)", marginLeft: "4px" }}>
-              {transcript.bahasa === "ms" ? "Bahasa Melayu" : "English"}
-            </strong>
-          </span>
-          <span className="proto-date-tag">
-            📅 {today}
-          </span>
         </div>
 
         {/* Error Message */}
@@ -225,25 +217,6 @@ export default function Transcript() {
               </div>
             </div>
 
-            {/* Quick Actions Card */}
-            <div className="proto-card">
-              <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-3)", marginBottom: "14px" }}>
-                {t(lang, "proto.quickActions")}
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <button className="proto-btn-ghost" style={{ justifyContent: "flex-start", padding: "10px 12px" }}>
-                  <Download size={14} /> {t(lang, "proto.exportPdf")}
-                </button>
-                <button className="proto-btn-ghost" style={{ justifyContent: "flex-start", padding: "10px 12px" }}>
-                  <Archive size={14} /> {t(lang, "proto.saveToArchive")}
-                </button>
-                <button className="proto-btn-ghost" style={{ justifyContent: "flex-start", padding: "10px 12px" }}>
-                  <Share2 size={14} /> {t(lang, "proto.shareLink")}
-                </button>
-              </div>
-            </div>
-
             {/* AI Ready Badge */}
             <div className="proto-ai-badge">
               <div className="proto-ai-badge-title">
@@ -261,9 +234,14 @@ export default function Transcript() {
 
       {/* Bottom Action Bar */}
       <div className="proto-bottom-bar">
-        <button className="proto-btn-outline" onClick={copyText}>
-          <Copy size={14} /> {copied ? "✓" : t(lang, "proto.copyText")}
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="proto-btn-outline" onClick={copyText}>
+            <Copy size={14} /> {copied ? "✓" : t(lang, "proto.copyText")}
+          </button>
+          <button className="proto-btn-outline" onClick={handleExportPDF}>
+            <Download size={14} /> {t(lang, "proto.exportPdf")}
+          </button>
+        </div>
         <button
           className="proto-btn-primary"
           onClick={handleSummarize}

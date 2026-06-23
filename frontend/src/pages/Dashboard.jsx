@@ -5,7 +5,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
 import {
-  Plus, History, Clock, BookOpen, Brain,
+  Plus, History, Clock,
   Search, Mic, FileText, Sparkles, HelpCircle, ChevronRight
 } from "lucide-react";
 
@@ -84,12 +84,14 @@ export default function Dashboard() {
     }
   };
 
+  // Unified amber accent (was a clashing rainbow of per-card colors).
+  const ACCENT = "#B85C00";
   const features = [
-    { icon: <Mic size={20} />, title: t(lang, "dashboard.f1Title"), desc: t(lang, "dashboard.chip1Sub"), path: "/input", color: "#6C63FF" },
-    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Desc").slice(0, 30) + "…", path: "/input", color: "#43E8D8" },
-    { icon: <Sparkles size={20} />, title: t(lang, "dashboard.f3Title"), desc: t(lang, "dashboard.chip2Sub"), path: "/input", color: "#FF6584" },
-    { icon: <HelpCircle size={20} />, title: t(lang, "dashboard.f4Title"), desc: t(lang, "dashboard.chip3Sub"), path: "/input", color: "#FFB74D" },
-    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Desc").slice(0, 30) + "…", path: "/history", color: "#4CAF75" },
+    { icon: <Mic size={20} />, title: t(lang, "dashboard.f1Title"), desc: t(lang, "dashboard.chip1Sub"), path: "/input", color: ACCENT },
+    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Desc").slice(0, 30) + "…", path: "/input", color: ACCENT },
+    { icon: <Sparkles size={20} />, title: t(lang, "dashboard.f3Title"), desc: t(lang, "dashboard.chip2Sub"), path: "/input", color: ACCENT },
+    { icon: <HelpCircle size={20} />, title: t(lang, "dashboard.f4Title"), desc: t(lang, "dashboard.chip3Sub"), path: "/input", color: ACCENT },
+    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Desc").slice(0, 30) + "…", path: "/history", color: ACCENT },
   ];
 
   return (
@@ -148,42 +150,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
-          <div className="proto-card" style={{ textAlign: "center", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
-              <BookOpen size={16} style={{ color: "#6C63FF" }} />
-              <span style={{ fontSize: "11px", color: "var(--proto-text-2)", fontWeight: 500 }}>{lang === "ms" ? "Nota Disimpan" : "Saved Notes"}</span>
-            </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
-              {statsLoading ? "..." : totalNotes}
-            </div>
-          </div>
-          <div className="proto-card" style={{ textAlign: "center", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
-              <Brain size={16} style={{ color: "var(--amber)" }} />
-              <span style={{ fontSize: "11px", color: "var(--proto-text-2)", fontWeight: 500 }}>{lang === "ms" ? "Kuiz Selesai" : "Quizzes Done"}</span>
-            </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
-              {statsLoading ? "..." : totalQuizzes}
-            </div>
-          </div>
-          <div className="proto-card" style={{ textAlign: "center", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
-              <Clock size={16} style={{ color: "#FF6584" }} />
-              <span style={{ fontSize: "11px", color: "var(--proto-text-2)", fontWeight: 500 }}>{lang === "ms" ? "Sesi Hari Ini" : "Today's Sessions"}</span>
-            </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
-              {todayCount}
-            </div>
-          </div>
-        </div>
-
         {/* Features Section */}
         <div>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "4px" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)", margin: "0 0 4px" }}>
             {t(lang, "dashboard.featuresHeading")}
-          </div>
+          </h2>
           <div style={{ fontSize: "12px", color: "var(--proto-text-2)", marginBottom: "16px" }}>
             {t(lang, "dashboard.featuresSubtitle")}
           </div>
@@ -219,12 +190,10 @@ export default function Dashboard() {
 
         {/* Recent Sessions */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px" }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px", fontSize: "12px", fontWeight: 600, color: "var(--proto-text)" }}>
             <Clock size={14} style={{ color: "var(--proto-text-2)" }} />
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--proto-text)" }}>
-              {lang === "ms" ? "Sesi Terkini" : "Recent Sessions"}
-            </span>
-          </div>
+            {lang === "ms" ? "Sesi Terkini" : "Recent Sessions"}
+          </h2>
 
           {histLoading ? (
             <div className="proto-card" style={{ padding: "24px", textAlign: "center" }}>
@@ -289,12 +258,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Kuiz Selesai Card - Amber */}
-        <div className="proto-card" style={{ textAlign: "center", background: "var(--amber)", borderColor: "var(--amber)" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "rgba(255,255,255,0.8)", marginBottom: "12px", fontWeight: 500 }}>
+        {/* Kuiz Selesai Card */}
+        <div className="proto-card" style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-2)", marginBottom: "12px", fontWeight: 500 }}>
             {lang === "ms" ? "KUIZ SELESAI" : "QUIZZES DONE"}
           </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--proto-font)", color: "#fff" }}>
+          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--proto-font)", color: "var(--amber)" }}>
             {statsLoading ? "..." : totalQuizzes}
           </div>
         </div>
@@ -344,15 +313,6 @@ export default function Dashboard() {
             }
           </p>
         </div>
-
-        {/* CTA Button */}
-        <button
-          className="proto-btn-primary"
-          onClick={() => navigate("/input")}
-          style={{ width: "100%", justifyContent: "center", padding: "14px" }}
-        >
-          <Plus size={16} /> {lang === "ms" ? "Sesi Baharu" : "New Session"}
-        </button>
       </div>
     </div>
   );

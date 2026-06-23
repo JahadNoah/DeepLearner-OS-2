@@ -7,8 +7,7 @@ import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { TopbarTabs } from "../components/ui/TopbarTabs";
-import { Sparkles, Download, Archive, Target, FileText, Zap } from "lucide-react";
+import { Sparkles, Download, Archive, FileText, Zap } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -53,12 +52,6 @@ export default function Summary() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-
-  const tabs = [
-    { label: lang === "ms" ? "Utama" : "Dashboard", path: "/app" },
-    { label: lang === "ms" ? "Sesi Baharu" : "New Session", path: "/input" },
-    { label: lang === "ms" ? "Sejarah" : "History", path: "/history" },
-  ];
 
   useEffect(() => {
     if (!summary && id) {
@@ -129,35 +122,14 @@ export default function Summary() {
     pdf.save(`DeepLearner_Ringkasan_${Date.now()}.pdf`);
   };
 
-  const stripMarkdown = (text) =>
-    text
-      .replace(/#{1,6}\s+/g, "")
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/\*(.*?)\*/g, "$1")
-      .replace(/`(.*?)`/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .trim();
-
-  const extractKeyPoints = (text) => {
-    if (!text) return [];
-    const clean = stripMarkdown(text);
-    const sentences = clean.split(/[.!?]+/).filter((s) => s.trim().length > 10);
-    return sentences.slice(0, 5).map((s) => s.trim());
-  };
-
-  const keyPoints = summary?.keyPoints || extractKeyPoints(summary?.teksRingkasan);
-
   // Stats derived from summary text
   const summaryText = summary?.teksRingkasan || "";
   const summaryWordCount = summaryText.split(/\s+/).filter(Boolean).length;
   const summaryReadTime = Math.ceil(summaryWordCount / 200);
-  // Rough key concepts count: unique capitalised nouns (approximation)
-  const conceptCount = [...new Set(summaryText.match(/\b[A-Z][a-z]{3,}\b/g) || [])].length || keyPoints.length;
 
   if (loadingSummary) {
     return (
       <>
-        <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
         <div className="proto-content">
           <div className="proto-card" style={{ textAlign: "center", padding: "48px" }}>
             <div className="spinner" style={{ margin: "0 auto" }} />
@@ -171,7 +143,6 @@ export default function Summary() {
   if (!summary) {
     return (
       <>
-        <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
         <div className="proto-content">
           <div className="proto-card" style={{ textAlign: "center", padding: "48px" }}>
             <p style={{ color: "var(--proto-text)", marginBottom: "16px" }}>{error || t(lang, "summary.notFound")}</p>
@@ -186,8 +157,6 @@ export default function Summary() {
 
   return (
     <>
-      <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
-
       <div className="proto-content">
         {/* Step Indicator */}
         <StepIndicator current={2} lang={lang} />
@@ -212,19 +181,9 @@ export default function Summary() {
             <span className="proto-stat-chip-unit">{t(lang, "proto.words")}</span>
           </div>
           <div className="proto-stat-chip">
-            <span className="proto-stat-chip-label">{t(lang, "proto.keyConcepts")}</span>
-            <span className="proto-stat-chip-value">{conceptCount}</span>
-            <span className="proto-stat-chip-unit">{lang === "ms" ? "konsep" : "concepts"}</span>
-          </div>
-          <div className="proto-stat-chip">
             <span className="proto-stat-chip-label">{t(lang, "proto.statsReadTime")}</span>
             <span className="proto-stat-chip-value">~{summaryReadTime}</span>
             <span className="proto-stat-chip-unit">{t(lang, "proto.minutes")}</span>
-          </div>
-          <div className="proto-stat-chip">
-            <span className="proto-stat-chip-label">{lang === "ms" ? "Poin Utama" : "Key Points"}</span>
-            <span className="proto-stat-chip-value">{keyPoints.length}</span>
-            <span className="proto-stat-chip-unit">{lang === "ms" ? "poin" : "points"}</span>
           </div>
         </div>
 
@@ -246,47 +205,25 @@ export default function Summary() {
           </div>
         )}
 
-        {/* Two-Column Layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-          {/* Key Points Card */}
-          <div className="proto-card">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-              <Target size={18} style={{ color: "var(--amber)" }} />
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)" }}>
-                {t(lang, "proto.keyPoints")}
-              </div>
+        {/* Full Summary — single source of truth, full width */}
+        <div className="proto-card" style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+            <FileText size={18} style={{ color: "var(--amber)" }} />
+            <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)" }}>
+              {t(lang, "proto.fullSummary")}
             </div>
-
-            <ul className="proto-key-points-list">
-              {keyPoints.map((point, idx) => (
-                <li key={idx}>
-                  <span className="proto-number-badge">{idx + 1}</span>
-                  <span style={{ fontSize: "13px", color: "var(--proto-text)", lineHeight: 1.6 }}>{point}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
-          {/* Full Summary Card */}
-          <div className="proto-card" style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-              <FileText size={18} style={{ color: "var(--amber)" }} />
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)" }}>
-                {t(lang, "proto.fullSummary")}
-              </div>
-            </div>
+          <div className="summary-markdown" style={{ flex: 1 }}>
+            <ReactMarkdown>{summary.teksRingkasan}</ReactMarkdown>
+          </div>
 
-            <div className="summary-markdown" style={{ flex: 1 }}>
-              <ReactMarkdown>{summary.teksRingkasan}</ReactMarkdown>
-            </div>
-
-            {/* Generated by chip */}
-            <div>
-              <span className="proto-generated-chip">
-                <Zap size={10} style={{ color: "var(--amber)" }} />
-                {t(lang, "proto.generatedBy")}
-              </span>
-            </div>
+          {/* Generated by chip */}
+          <div>
+            <span className="proto-generated-chip">
+              <Zap size={10} style={{ color: "var(--amber)" }} />
+              {t(lang, "proto.generatedBy")}
+            </span>
           </div>
         </div>
       </div>

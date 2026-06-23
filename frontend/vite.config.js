@@ -5,9 +5,13 @@ import react from '@vitejs/plugin-react-swc'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: 'all',
+    // `true` allows any host (needed for the Cloudflare demo tunnel). The string
+    // 'all' is NOT special-cased by Vite 6 — it was silently blocking the tunnel.
+    allowedHosts: true,
     proxy: {
-      '/api': 'http://localhost:8001',
+      // Backend runs on :8000 (see README + main.py). Was pointing at :8001,
+      // which broke every /api call made through the browser.
+      '/api': 'http://localhost:8000',
     },
   },
   optimizeDeps: {

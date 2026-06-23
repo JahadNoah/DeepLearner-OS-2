@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, User, Settings, LogOut, Sun, Moon, Globe } from "lucide-react";
+import { Home, Plus, Clock, LogOut, Sun, Moon, Globe } from "lucide-react";
 import { useTheme } from "../../context/useTheme";
 import { useLanguage } from "../../context/useLanguage";
 import { auth } from "../../firebase";
@@ -23,10 +23,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
 
   const navItems = [
     { id: "dashboard", label: { ms: "Utama", en: "Dashboard" }, icon: Home, path: "/app" },
-    { id: "new-session", label: { ms: "Sesi Baharu", en: "New Session" }, icon: Plus, path: "/input" },
     { id: "history", label: { ms: "Sejarah", en: "History" }, icon: Clock, path: "/history" },
-    { id: "profile", label: { ms: "Profile", en: "Profile" }, icon: User, path: "/app" },
-    { id: "settings", label: { ms: "Settings", en: "Settings" }, icon: Settings, path: "/app" }
   ];
 
   const getUserInitial = () => {
@@ -152,8 +149,9 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
       <button
         className="proto-sidebar-cta"
         onClick={() => navigate("/input")}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
-        + {lang === "ms" ? "Sesi Baharu" : "New Session"}
+        <Plus size={16} /> {lang === "ms" ? "Sesi Baharu" : "New Session"}
       </button>
     </aside>
   );

@@ -54,9 +54,13 @@ export default function App() {
   const [user, setUser] = useState(undefined);
 
   useEffect(() => {
+    // Guard against Firebase never initialising (keeps us off an infinite
+    // spinner). Generous so it does NOT fire during normal auth restore —
+    // a 1s value used to force-logout slow-but-valid sessions, which flashed
+    // the Landing page before snapping back to the dashboard.
     const timeout = setTimeout(() => {
       setUser((prev) => (prev === undefined ? null : prev));
-    }, 1000);
+    }, 5000);
 
     const unsub = onAuthStateChanged(auth, (u) => {
       clearTimeout(timeout);

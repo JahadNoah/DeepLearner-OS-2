@@ -71,12 +71,12 @@ def clean_transcript(raw_text: str) -> str:
     return cleaned
 
 
-# ─── Light Normaliser (fallback when Ollama is offline) ─────────────────────
+# ─── Light Normaliser (fallback when Groq is offline) ─────────────────────
 def _light_normalize(text: str) -> str:
     """
-    Minimal rule-based cleanup when Ollama is unavailable.
+    Minimal rule-based cleanup when Groq is unavailable.
     Strips the most common fillers and collapses whitespace.
-    Not a replacement for Ollama — just keeps output readable.
+    Not a replacement for Groq — just keeps output readable.
     """
     en_fillers = r'\b(umm+|uhh+|ahh+|err+|hmm+|erm+|like|you know)\b'
     ms_fillers = r'\b(aa+|emm+|erm+|kan\b|lah\b|eh\b|ha\b)\b'

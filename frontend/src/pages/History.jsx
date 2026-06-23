@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/fire
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
+import { FileText, Trash2, Inbox } from "lucide-react";
 
 export default function History() {
     const [notes, setNotes] = useState([]);
@@ -44,6 +45,8 @@ export default function History() {
     };
 
     const handleDelete = async (idNota) => {
+        const ok = window.confirm(lang === "ms" ? "Padam nota ini? Tindakan ini tidak boleh dibatalkan." : "Delete this note? This cannot be undone.");
+        if (!ok) return;
         setDeleting(idNota);
         await deleteDoc(doc(db, "nota", idNota));
         setNotes(prev => prev.filter(n => n.id !== idNota));
@@ -88,7 +91,7 @@ export default function History() {
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📭</div>
+                    <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center", opacity: 0.5 }}><Inbox size={40} /></div>
                     <h3>{t(lang, "history.emptyHeading")}</h3>
                     <p style={{ marginTop: "0.5rem" }}>
                         {search ? t(lang, "history.emptySearch") : t(lang, "history.emptyDefault")}
@@ -105,7 +108,7 @@ export default function History() {
                     {filtered.map((note) => (
                         <div key={note.id} className="history-item">
                             <div>
-                                <div style={{ fontWeight: 600, color: "var(--text)" }}>📄 {note.tajuk || t(lang, "history.untitled")}</div>
+                                <div style={{ fontWeight: 600, color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}><FileText size={14} /> {note.tajuk || t(lang, "history.untitled")}</div>
                                 <div className="history-meta">{formatDate(note.tarikhSimpan)}</div>
                             </div>
                             <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -122,7 +125,7 @@ export default function History() {
                                     disabled={deleting === note.id}
                                     onClick={() => handleDelete(note.id)}
                                 >
-                                    {deleting === note.id ? "..." : "🗑"}
+                                    {deleting === note.id ? "..." : <Trash2 size={14} />}
                                 </button>
                             </div>
                         </div>

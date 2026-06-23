@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { TopbarTabs } from "../components/ui/TopbarTabs";
 import { HelpCircle, RotateCcw, Home, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import { db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -93,16 +92,9 @@ export default function Quiz() {
     }
   }, [STORAGE_KEY, current, selected, answered, score, done, results, questions.length]);
 
-  const tabs = [
-    { label: lang === "ms" ? "Utama" : "Dashboard", path: "/app" },
-    { label: lang === "ms" ? "Sesi Baharu" : "New Session", path: "/input" },
-    { label: lang === "ms" ? "Sejarah" : "History", path: "/history" },
-  ];
-
   if (!quiz || questions.length === 0) {
     return (
       <>
-        <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
         <div className="proto-content">
           <div className="proto-card" style={{ textAlign: "center", padding: "48px" }}>
             <p style={{ color: "var(--proto-text)", marginBottom: "16px" }}>{t(lang, "quiz.notFound")}</p>
@@ -176,18 +168,17 @@ export default function Quiz() {
   if (done) {
     return (
       <>
-        <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
         <div className="proto-content" style={{ maxWidth: "640px", margin: "0 auto" }}>
 
           {/* Congratulations Card */}
           <div className="proto-card" style={{ textAlign: "center", marginBottom: "20px", padding: "32px" }}>
             <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎉</div>
-            <h2 style={{
+            <h1 style={{
               fontFamily: "var(--proto-font)", fontSize: "22px", fontWeight: 700,
               color: "var(--proto-text)", marginBottom: "6px",
             }}>
               {t(lang, "proto.congratulations")}
-            </h2>
+            </h1>
             <p style={{ color: "var(--proto-text-2)", marginBottom: "24px", fontSize: "14px" }}>
               {t(lang, "quiz.completedMsg")}
             </p>
@@ -273,8 +264,6 @@ export default function Quiz() {
   // ─── Quiz Screen ──────────────────────────────────────────
   return (
     <>
-      <TopbarTabs tabs={tabs} activeTab={lang === "ms" ? "Sesi Baharu" : "New Session"} />
-
       <div className="proto-content" style={{ maxWidth: "700px", margin: "0 auto" }}>
         {/* Enrichment banner */}
         {enriching && (
@@ -363,7 +352,7 @@ export default function Quiz() {
                   <>
                     <CheckCircle size={20} style={{ color: "#00e676" }} />
                     <span style={{ fontSize: "14px", fontWeight: 600, color: "#00e676" }}>
-                      ✓ {t(lang, "proto.correct")}!
+                      {t(lang, "proto.correct")}!
                     </span>
                   </>
                 ) : (
@@ -371,7 +360,7 @@ export default function Quiz() {
                     <XCircle size={20} style={{ color: "#f44336" }} />
                     <div>
                       <span style={{ fontSize: "14px", fontWeight: 600, color: "#f44336" }}>
-                        ✗ {t(lang, "proto.wrong")}
+                        {t(lang, "proto.wrong")}
                       </span>
                       <div style={{ fontSize: "12px", color: "var(--proto-text-2)", marginTop: "2px" }}>
                         {t(lang, "quiz.correctAnswer", { answer: q.jawapanBetul })}
