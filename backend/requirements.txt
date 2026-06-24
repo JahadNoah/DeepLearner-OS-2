@@ -1,17 +1,19 @@
+# DeepLearner OS — backend runtime dependencies (lean / deploy-ready).
+#
+# Transcription, summarization, quiz generation, and transcript cleaning all run
+# through Groq's hosted API, so NO local ML stack (torch/whisper/transformers) is
+# needed at runtime. This keeps the deploy small enough for Render / Cloud Run.
+#
+# Optional local fallbacks (local Whisper, T5 summarizer, spaCy quiz NLP) live in
+# requirements-optional.txt — install those only for offline/local-fallback dev.
+
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.12
 firebase-admin==6.5.0
-openai-whisper==20231117
-transformers==4.44.2
-torch==2.4.1
-sentencepiece==0.2.0
-accelerate==0.34.2
 python-dotenv==1.0.1
 httpx==0.27.2
 pdfplumber==0.11.9
 PyMuPDF==1.26.1
 google-generativeai>=0.8.0
 groq>=0.9.0
-# Optional — install manually for enhanced NLP (Strategy A):
-# pip install spacy && python -m spacy download en_core_web_sm

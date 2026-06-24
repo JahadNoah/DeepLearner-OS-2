@@ -1,0 +1,17 @@
+# Optional local-fallback dependencies (NOT needed for the Groq-powered deploy).
+#
+# Install these only if you want the offline/local fallbacks to work:
+#   - USE_LOCAL_WHISPER=true  -> local openai-whisper transcription (needs torch)
+#   - USE_AI_SUMMARIZER=true  -> T5 summarizer (needs transformers/torch)
+#   - spaCy quiz NLP fallback -> used when Groq returns too few quiz questions
+#
+# Usage (local dev only):
+#   pip install -r requirements-optional.txt
+#   python -m spacy download en_core_web_sm   # for the quiz NLP fallback
+
+openai-whisper==20231117
+transformers==4.44.2
+torch==2.4.1
+sentencepiece==0.2.0
+accelerate==0.34.2
+spacy>=3.8.0

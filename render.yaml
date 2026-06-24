@@ -1,0 +1,41 @@
+# Render Blueprint for the DeepLearner OS backend (FastAPI).
+# Render dashboard → New → Blueprint → connect this repo. Then fill in the
+# secret env vars (marked sync: false) in the dashboard.
+services:
+  - type: web
+    name: deeplearner-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # ── Groq (required) ───────────────────────────────────────────────
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_API_KEY_2
+        sync: false
+      - key: GROQ_MODEL
+        value: qwen/qwen3-32b
+      - key: WHISPER_MODEL
+        value: whisper-large-v3-turbo
+      # ── Gemini (PDF OCR + multimodal quiz) ────────────────────────────
+      - key: GEMINI_API_KEY
+        sync: false
+      # ── Firebase ──────────────────────────────────────────────────────
+      # Paste the FULL service-account JSON (or its base64) as the value.
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      # ── CORS — set to your Vercel frontend origin(s), comma-separated ──
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # ── Keep the local ML fallbacks OFF in production ─────────────────
+      - key: USE_AI_SUMMARIZER
+        value: "false"
+      - key: USE_LOCAL_WHISPER
+        value: "false"
