@@ -567,6 +567,35 @@ def _extract_json_array(raw: str) -> list:
     return []
 
 
+_ANSWER_LETTER_RE = re.compile(r"^\(?([A-Da-d])[\).:]?$")
+_OPTION_PREFIX_RE = re.compile(r"^\s*\(?[A-Da-d][\).:]\s*")
+
+
+def _resolve_answer(jawapan: str, pilihan: list) -> str:
+    """Map the model's answer to the matching option string, or '' if unresolvable.
+
+    Qwen3 commonly returns the answer as a bare letter ("C") while the options carry
+    letter prefixes ("C. ..."), so a literal `jawapan in pilihan` test discards every
+    question. This resolves a letter (or an un-prefixed answer string) back to the
+    actual option text.
+    """
+    j = (jawapan or "").strip()
+    if not isinstance(pilihan, list) or not pilihan:
+        return ""
+    if j in pilihan:
+        return j
+    m = _ANSWER_LETTER_RE.match(j)
+    if m:
+        idx = ord(m.group(1).upper()) - 65
+        if 0 <= idx < len(pilihan):
+            return pilihan[idx]
+    for opt in pilihan:
+        stripped = _OPTION_PREFIX_RE.sub("", str(opt)).strip()
+        if j and (j == stripped or j == str(opt) or stripped.startswith(j)):
+            return opt
+    return ""
+
+
 def _validate_llm_response(data: list) -> List[dict]:
     """Validate and sanitize LLM output against the expected question schema."""
     if not isinstance(data, list):
@@ -578,10 +607,13 @@ def _validate_llm_response(data: list) -> List[dict]:
             continue
         soalan  = item.get("soalan", "").strip()
         pilihan = item.get("pilihanJawapan", [])
-        jawapan = item.get("jawapanBetul", "").strip()
         penjelasan = item.get("penjelasan", "").strip()
-        if soalan and isinstance(pilihan, list) and len(pilihan) in (2, 4) and jawapan in pilihan:
-            valid.append({"soalan": soalan, "pilihanJawapan": pilihan, "jawapanBetul": jawapan, "penjelasan": penjelasan})
+        if not (soalan and isinstance(pilihan, list) and len(pilihan) in (2, 4)):
+            continue
+        jawapan = _resolve_answer(str(item.get("jawapanBetul", "")), pilihan)
+        if not jawapan:
+            continue
+        valid.append({"soalan": soalan, "pilihanJawapan": pilihan, "jawapanBetul": jawapan, "penjelasan": penjelasan})
     return valid
 
 
