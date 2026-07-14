@@ -6928,6 +6928,8 @@ textarea.input {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .proto-content {
