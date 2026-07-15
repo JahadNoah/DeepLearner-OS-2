@@ -7348,7 +7348,7 @@ textarea.input {
   --clay-bg: #211E29;
   --clay-surface: #2B2735;
   --clay-primary: #A594F9;       /* accents, active states, links — NOT a white-text bg */
-  --clay-primary-deep: #8B7CF6;  /* button bg w/ white text (AA pass), hover states */
+  --clay-primary-deep: #6D5BD0;  /* button bg w/ white text (~5.18:1 contrast, AA pass), same value as light theme */
   --clay-accent: #FFB4A2;
   --clay-success: #8FD9B6;
   --clay-success-tint: #24463A;
