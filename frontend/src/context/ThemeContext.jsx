@@ -4,7 +4,7 @@ export const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
     const [theme, setTheme] = useState(() => {
-        return localStorage.getItem("deeplearner-theme") || "dark";
+        return localStorage.getItem("deeplearner-theme") || "light";
     });
 
     const [videoMode, setVideoMode] = useState(() => {
