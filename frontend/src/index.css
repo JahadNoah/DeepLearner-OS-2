@@ -7395,3 +7395,101 @@ textarea.input {
   --clay-shadow-press: 3px 3px 8px rgba(139,124,246,0.18) inset;
   --clay-focus-ring: 0 0 0 3px rgba(139,124,246,0.45);
 }
+
+/* ============================================================
+   CLAY UTILITY CLASSES
+============================================================ */
+
+.clay-card {
+  background: var(--clay-surface);
+  border-radius: var(--clay-radius-card);
+  padding: 1.5rem;
+  box-shadow: var(--clay-shadow);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  color: var(--clay-text);
+}
+
+.clay-card:hover {
+  transform: translateY(-2px);
+}
+
+a.clay-card,
+.clay-card[role="button"] {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.clay-card:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-shadow), var(--clay-focus-ring);
+}
+
+.clay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--clay-radius-ctrl);
+  border: none;
+  font-family: var(--clay-font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  text-decoration: none;
+}
+
+.clay-btn:active {
+  transform: scale(0.97);
+}
+
+.clay-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-focus-ring);
+}
+
+.clay-btn-primary {
+  background: var(--clay-primary-deep);
+  color: #FFFFFF;
+  box-shadow: var(--clay-shadow);
+}
+
+.clay-btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(139,124,246,0.35);
+}
+
+.clay-btn-ghost {
+  background: rgba(255,255,255,0.15);
+  color: inherit;
+}
+
+.clay-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: var(--clay-radius-ctrl);
+  border: none;
+  background: var(--clay-surface);
+  color: var(--clay-text);
+  font-family: var(--clay-font-body);
+  font-size: 0.9rem;
+  box-shadow: var(--clay-shadow-press);
+  transition: box-shadow 0.15s ease;
+}
+
+.clay-input:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-shadow-press), var(--clay-focus-ring);
+}
+
+.clay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--clay-radius-pill);
+  background: var(--clay-accent);
+  color: var(--clay-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
