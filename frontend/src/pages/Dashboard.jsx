@@ -156,7 +156,7 @@ export default function Dashboard() {
             <Link to="/input" className="clay-btn" style={{ background: "#FFFFFF", color: "var(--clay-primary-deep)" }}>
               <Plus size={16} /> {lang === "ms" ? "Sesi Baharu" : "New Session"}
             </Link>
-            <Link to="/history" className="clay-btn clay-btn-ghost" style={{ color: "#FFFFFF" }}>
+            <Link to="/history" className="clay-btn" style={{ color: "#FFFFFF", background: "transparent", border: "1px solid rgba(255,255,255,0.4)" }}>
               <History size={16} /> {lang === "ms" ? "Sejarah" : "History"}
             </Link>
           </div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
                   height: "40px",
                   borderRadius: "10px",
                   background: "var(--clay-accent)",
-                  color: "var(--clay-text)",
+                  color: "var(--clay-on-accent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -215,7 +215,7 @@ export default function Dashboard() {
               <div style={{ fontSize: "13px", color: "var(--clay-text-sub)", marginBottom: "12px" }}>
                 {lang === "ms" ? "Belum ada sesi disimpan." : "No saved sessions yet."}
               </div>
-              <Link to="/input" style={{ fontSize: "12px", color: "var(--clay-primary-deep)", fontWeight: 600 }}>
+              <Link to="/input" style={{ fontSize: "12px", color: "var(--clay-link)", fontWeight: 600 }}>
                 {lang === "ms" ? "Mulakan sekarang →" : "Start now →"}
               </Link>
             </div>
@@ -246,7 +246,7 @@ export default function Dashboard() {
                   <ChevronRight size={14} style={{ color: "var(--clay-text-sub)" }} />
                 </Link>
               ))}
-              <Link to="/history" style={{ fontSize: "12px", color: "var(--clay-primary-deep)", textAlign: "right", marginTop: "4px", fontWeight: 600 }}>
+              <Link to="/history" style={{ fontSize: "12px", color: "var(--clay-link)", textAlign: "right", marginTop: "4px", fontWeight: 600 }}>
                 {lang === "ms" ? "Lihat semua →" : "See all →"}
               </Link>
             </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
           <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-text-sub)", marginBottom: "12px", fontWeight: 500 }}>
             {lang === "ms" ? "KUIZ SELESAI" : "QUIZZES DONE"}
           </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--clay-font-head)", color: "var(--clay-primary-deep)" }}>
+          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--clay-font-head)", color: "var(--clay-link)" }}>
             {statsLoading ? "..." : totalQuizzes}
           </div>
         </div>

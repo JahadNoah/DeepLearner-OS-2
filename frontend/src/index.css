@@ -7350,6 +7350,8 @@ textarea.input {
   --clay-primary: #A594F9;       /* accents, active states, links — NOT a white-text bg */
   --clay-primary-deep: #6D5BD0;  /* button bg w/ white text (~5.18:1 contrast, AA pass), same value as light theme */
   --clay-accent: #FFB4A2;
+  --clay-on-accent: #332F3A;     /* fixed dark text/icon color for on top of --clay-accent (same fixed bg in both themes) — ~7.6:1 */
+  --clay-link: #A594F9;          /* text-safe link color on card surface (~5.68:1 vs #2B2735) — do not use --clay-primary-deep as text */
   --clay-success: #8FD9B6;
   --clay-success-tint: #24463A;
   --clay-danger: #EF7C6E;
@@ -7383,6 +7385,8 @@ textarea.input {
   --clay-primary: #8B7CF6;
   --clay-primary-deep: #6D5BD0;
   --clay-accent: #FFB4A2;
+  --clay-on-accent: #332F3A;     /* fixed dark text/icon color for on top of --clay-accent (same fixed bg in both themes) — ~7.6:1 */
+  --clay-link: #6D5BD0;          /* text-safe link color on white/light surface (~5.18:1) — do not use --clay-primary-deep as text */
   --clay-success: #8FD9B6;
   --clay-success-tint: #E6F6EE;
   --clay-danger: #EF7C6E;
@@ -7409,7 +7413,8 @@ textarea.input {
   color: var(--clay-text);
 }
 
-.clay-card:hover {
+a.clay-card:hover,
+.clay-card[role="button"]:hover {
   transform: translateY(-2px);
 }
 
@@ -7477,7 +7482,7 @@ a.clay-card,
   transition: box-shadow 0.15s ease;
 }
 
-.clay-input:focus-visible {
+.clay-input:focus-within {
   outline: none;
   box-shadow: var(--clay-shadow-press), var(--clay-focus-ring);
 }
@@ -7489,7 +7494,7 @@ a.clay-card,
   padding: 0.25rem 0.75rem;
   border-radius: var(--clay-radius-pill);
   background: var(--clay-accent);
-  color: var(--clay-text);
+  color: var(--clay-on-accent);
   font-size: 0.75rem;
   font-weight: 600;
 }
