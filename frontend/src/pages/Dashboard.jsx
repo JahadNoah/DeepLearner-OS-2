@@ -113,17 +113,11 @@ export default function Dashboard() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
 
         {/* Search Bar */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          background: "var(--proto-surface)",
-          border: "1px solid var(--proto-border)",
-          borderRadius: "12px",
-          padding: "10px 16px",
-          backdropFilter: "var(--proto-glass-blur)",
-        }}>
-          <Search size={16} style={{ color: "var(--proto-text-2)" }} />
+        <div
+          className="clay-input"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
+        >
+          <Search size={16} style={{ color: "var(--clay-text-sub)" }} />
           <input
             ref={searchRef}
             type="text"
@@ -137,28 +131,32 @@ export default function Dashboard() {
               border: "none",
               outline: "none",
               fontSize: "13px",
-              color: "var(--proto-text)",
+              color: "var(--clay-text)",
+              fontFamily: "var(--clay-font-body)",
             }}
           />
-          <span style={{ fontSize: "11px", color: "var(--proto-text-2)", background: "var(--proto-surface2)", padding: "2px 8px", borderRadius: "4px" }}>⌘K</span>
+          <span className="clay-badge">⌘K</span>
         </div>
 
         {/* Welcome Card */}
-        <div className="proto-card" style={{ background: "var(--amber)", borderColor: "var(--amber)" }}>
+        <div
+          className="clay-card"
+          style={{ background: "var(--clay-primary-deep)", color: "#FFFFFF" }}
+        >
           <div style={{ fontSize: "10px", letterSpacing: "0.1em", opacity: 0.8, marginBottom: "8px" }}>
             ✦ DEEPLEARNER OS
           </div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, fontFamily: "var(--proto-font)", marginBottom: "8px" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, fontFamily: "var(--clay-font-head)", marginBottom: "8px", color: "#FFFFFF" }}>
             {t(lang, "dashboard.welcome", { name })}
           </h1>
           <p style={{ fontSize: "13px", opacity: 0.9, marginBottom: "20px", maxWidth: "400px", lineHeight: 1.6 }}>
             {t(lang, "dashboard.subtitle")}
           </p>
           <div style={{ display: "flex", gap: "12px" }}>
-            <Link to="/input" className="proto-btn" style={{ background: "rgba(255,255,255,0.2)", color: "#fff", textDecoration: "none" }}>
+            <Link to="/input" className="clay-btn" style={{ background: "#FFFFFF", color: "var(--clay-primary-deep)" }}>
               <Plus size={16} /> {lang === "ms" ? "Sesi Baharu" : "New Session"}
             </Link>
-            <Link to="/history" className="proto-btn-ghost" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none" }}>
+            <Link to="/history" className="clay-btn clay-btn-ghost" style={{ color: "#FFFFFF" }}>
               <History size={16} /> {lang === "ms" ? "Sejarah" : "History"}
             </Link>
           </div>
@@ -166,28 +164,26 @@ export default function Dashboard() {
 
         {/* Features Section */}
         <div>
-          <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)", margin: "0 0 4px" }}>
             {t(lang, "dashboard.featuresHeading")}
           </h2>
-          <div style={{ fontSize: "12px", color: "var(--proto-text-2)", marginBottom: "16px" }}>
+          <div style={{ fontSize: "12px", color: "var(--clay-text-sub)", marginBottom: "16px" }}>
             {t(lang, "dashboard.featuresSubtitle")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px" }}>
             {features.map((f) => (
-              <div
+              <Link
                 key={f.title}
-                className="proto-card"
-                onClick={() => navigate(f.path)}
-                style={{ cursor: "pointer", padding: "16px", textAlign: "center", transition: "all var(--proto-transition)" }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = f.color}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--proto-border)"}
+                to={f.path}
+                className="clay-card"
+                style={{ padding: "16px", textAlign: "center", color: "var(--clay-text)" }}
               >
                 <div style={{
                   width: "40px",
                   height: "40px",
                   borderRadius: "10px",
-                  background: `${f.color}20`,
-                  color: f.color,
+                  background: "var(--clay-accent)",
+                  color: "var(--clay-text)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -195,31 +191,31 @@ export default function Dashboard() {
                 }}>
                   {f.icon}
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--proto-text)", marginBottom: "4px" }}>{f.title}</div>
-                <div style={{ fontSize: "10px", color: "var(--proto-text-2)" }}>{f.desc}</div>
-              </div>
+                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--clay-text)", marginBottom: "4px" }}>{f.title}</div>
+                <div style={{ fontSize: "10px", color: "var(--clay-text-sub)" }}>{f.desc}</div>
+              </Link>
             ))}
           </div>
         </div>
 
         {/* Recent Sessions */}
         <div>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px", fontSize: "12px", fontWeight: 600, color: "var(--proto-text)" }}>
-            <Clock size={14} style={{ color: "var(--proto-text-2)" }} />
+          <h2 style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px", fontSize: "12px", fontWeight: 600, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)" }}>
+            <Clock size={14} style={{ color: "var(--clay-text-sub)" }} />
             {lang === "ms" ? "Sesi Terkini" : "Recent Sessions"}
           </h2>
 
           {histLoading ? (
-            <div className="proto-card" style={{ padding: "24px", textAlign: "center" }}>
+            <div className="clay-card" style={{ padding: "24px", textAlign: "center" }}>
               <div className="spinner" style={{ margin: "0 auto" }} />
             </div>
           ) : recentNotes.length === 0 ? (
-            <div className="proto-card" style={{ padding: "24px", textAlign: "center" }}>
+            <div className="clay-card" style={{ padding: "24px", textAlign: "center" }}>
               <div style={{ fontSize: "24px", marginBottom: "8px" }}>📭</div>
-              <div style={{ fontSize: "13px", color: "var(--proto-text-2)", marginBottom: "12px" }}>
+              <div style={{ fontSize: "13px", color: "var(--clay-text-sub)", marginBottom: "12px" }}>
                 {lang === "ms" ? "Belum ada sesi disimpan." : "No saved sessions yet."}
               </div>
-              <Link to="/input" style={{ fontSize: "12px", color: "var(--amber)" }}>
+              <Link to="/input" style={{ fontSize: "12px", color: "var(--clay-primary-deep)", fontWeight: 600 }}>
                 {lang === "ms" ? "Mulakan sekarang →" : "Start now →"}
               </Link>
             </div>
@@ -229,29 +225,28 @@ export default function Dashboard() {
                 <Link
                   key={note.id}
                   to={`/summary/${note.idRingkasan}`}
-                  className="proto-card"
+                  className="clay-card"
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
                     padding: "12px 16px",
-                    textDecoration: "none",
-                    transition: "all var(--proto-transition)",
+                    color: "var(--clay-text)",
                   }}
                 >
                   <span style={{ fontSize: "16px" }}>📄</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--proto-text)" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--clay-text)" }}>
                       {note.tajuk || (lang === "ms" ? "Nota Tanpa Tajuk" : "Untitled Note")}
                     </div>
-                    <div style={{ fontSize: "11px", color: "var(--proto-text-2)" }}>
+                    <div style={{ fontSize: "11px", color: "var(--clay-text-sub)" }}>
                       {formatDate(note.tarikhSimpan, lang)}
                     </div>
                   </div>
-                  <ChevronRight size={14} style={{ color: "var(--proto-text-2)" }} />
+                  <ChevronRight size={14} style={{ color: "var(--clay-text-sub)" }} />
                 </Link>
               ))}
-              <Link to="/history" style={{ fontSize: "12px", color: "var(--amber)", textAlign: "right", marginTop: "4px" }}>
+              <Link to="/history" style={{ fontSize: "12px", color: "var(--clay-primary-deep)", textAlign: "right", marginTop: "4px", fontWeight: 600 }}>
                 {lang === "ms" ? "Lihat semua →" : "See all →"}
               </Link>
             </div>
@@ -263,51 +258,51 @@ export default function Dashboard() {
       <div style={{ width: "240px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "16px" }}>
 
         {/* Nota Disimpan Card */}
-        <div className="proto-card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-2)", marginBottom: "12px", fontWeight: 500 }}>
+        <div className="clay-card" style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-text-sub)", marginBottom: "12px", fontWeight: 500 }}>
             {lang === "ms" ? "NOTA DISIMPAN" : "SAVED NOTES"}
           </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
+          <div style={{ fontSize: "48px", fontWeight: 800, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)" }}>
             {statsLoading ? "..." : totalNotes}
           </div>
         </div>
 
         {/* Kuiz Selesai Card */}
-        <div className="proto-card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-2)", marginBottom: "12px", fontWeight: 500 }}>
+        <div className="clay-card" style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-text-sub)", marginBottom: "12px", fontWeight: 500 }}>
             {lang === "ms" ? "KUIZ SELESAI" : "QUIZZES DONE"}
           </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--proto-font)", color: "var(--amber)" }}>
+          <div style={{ fontSize: "48px", fontWeight: 800, fontFamily: "var(--clay-font-head)", color: "var(--clay-primary-deep)" }}>
             {statsLoading ? "..." : totalQuizzes}
           </div>
         </div>
 
         {/* Sesi Hari Ini Card */}
-        <div className="proto-card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-2)", marginBottom: "12px", fontWeight: 500 }}>
+        <div className="clay-card" style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-text-sub)", marginBottom: "12px", fontWeight: 500 }}>
             {lang === "ms" ? "SESI HARI INI" : "TODAY'S SESSIONS"}
           </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>
+          <div style={{ fontSize: "48px", fontWeight: 800, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)" }}>
             {todayCount}
           </div>
         </div>
 
         {/* Continue Last Session Card */}
         {lastSession && (
-          <div className="proto-card" style={{ background: "var(--proto-surface2)", borderColor: "var(--proto-border)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--proto-text-2)", marginBottom: "8px", fontWeight: 500 }}>
+          <div className="clay-card">
+            <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-text-sub)", marginBottom: "8px", fontWeight: 500 }}>
               {lang === "ms" ? "TERUSKAN SESI" : "CONTINUE SESSION"}
             </div>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--proto-text)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--clay-text)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {lastSession.tajuk || (lang === "ms" ? "Nota Tanpa Tajuk" : "Untitled Note")}
             </div>
-            <div style={{ fontSize: "11px", color: "var(--proto-text-2)", marginBottom: "12px" }}>
+            <div style={{ fontSize: "11px", color: "var(--clay-text-sub)", marginBottom: "12px" }}>
               {formatDate(lastSession.tarikhSimpan, lang)}
             </div>
             <Link
               to={`/summary/${lastSession.idRingkasan}`}
-              className="proto-btn-outline"
-              style={{ textDecoration: "none", width: "100%", justifyContent: "center", fontSize: "12px" }}
+              className="clay-btn clay-btn-primary"
+              style={{ width: "100%", fontSize: "12px" }}
             >
               {lang === "ms" ? "Teruskan →" : "Continue →"}
             </Link>
@@ -315,15 +310,15 @@ export default function Dashboard() {
         )}
 
         {/* Tip Belajar Card */}
-        <div className="proto-card" style={{ background: "var(--proto-surface2)" }}>
+        <div className="clay-card">
           <div style={{ fontSize: "20px", marginBottom: "8px" }}>💡</div>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "8px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)" }}>
             {lang === "ms" ? "Tip Belajar" : "Study Tip"}
           </div>
-          <p style={{ fontSize: "12px", color: "var(--proto-text-2)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "12px", color: "var(--clay-text-sub)", lineHeight: 1.6 }}>
             {lang === "ms"
-              ? <>Gunakan <strong style={{ color: "var(--proto-text)" }}>"Ringkasan Automatik"</strong> selepas merakam kuliah untuk mendapatkan poin utama dengan pantas.</>
-              : <>Use <strong style={{ color: "var(--proto-text)" }}>"Auto Summary"</strong> after recording a lecture to instantly extract key points.</>
+              ? <>Gunakan <strong style={{ color: "var(--clay-text)" }}>"Ringkasan Automatik"</strong> selepas merakam kuliah untuk mendapatkan poin utama dengan pantas.</>
+              : <>Use <strong style={{ color: "var(--clay-text)" }}>"Auto Summary"</strong> after recording a lecture to instantly extract key points.</>
             }
           </p>
         </div>
