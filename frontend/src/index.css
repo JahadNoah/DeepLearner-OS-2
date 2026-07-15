@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=Nunito:wght@400;700;800;900&display=swap');
 @import "tailwindcss";
 
 /* ==================== CSS Variables (Linear Inspired) ==================== */
@@ -7335,3 +7335,63 @@ textarea.input {
   margin-bottom: 4px;
 }
 
+/* ============================================================
+   CLAYMORPHISM DESIGN TOKENS
+   Added: 2026-07-16
+   Namespace: --clay-* — parallel to --proto-*, does not replace it.
+   Dark values on bare :root, light values under .theme-light —
+   matches this file's existing convention (see --proto-* above).
+============================================================ */
+
+:root {
+  /* Clay palette — dark (bare root) */
+  --clay-bg: #211E29;
+  --clay-surface: #2B2735;
+  --clay-primary: #A594F9;       /* accents, active states, links — NOT a white-text bg */
+  --clay-primary-deep: #8B7CF6;  /* button bg w/ white text (AA pass), hover states */
+  --clay-accent: #FFB4A2;
+  --clay-success: #8FD9B6;
+  --clay-success-tint: #24463A;
+  --clay-danger: #EF7C6E;
+  --clay-danger-tint: #4A2A28;
+  --clay-text: #EDEAF2;
+  --clay-text-sub: #A6A1B0;
+
+  /* Shape */
+  --clay-radius-card: 24px;
+  --clay-radius-ctrl: 16px;
+  --clay-radius-pill: 999px;
+
+  /* Depth — dark: glow + hairline, not a recolored light shadow */
+  --clay-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  --clay-shadow-press: inset 0 2px 6px rgba(0,0,0,0.4);
+  --clay-focus-ring: 0 0 0 3px rgba(165,148,249,0.55);
+
+  /* Type — Noto Sans SC / Noto Sans Tamil are fallback *names* only, no @import.
+     Harmless no-op for users without those fonts OS-installed; cheap to keep since
+     this is a token (one line to edit later either way), but NOT worth the added
+     page weight of actually loading those font files for scripts nothing in this
+     app renders today (only ms/en exist — see i18n/translations.js). */
+  --clay-font-head: 'Nunito', 'Noto Sans SC', 'Noto Sans Tamil', sans-serif;
+  --clay-font-body: 'DM Sans', 'Noto Sans SC', 'Noto Sans Tamil', sans-serif;
+}
+
+.theme-light {
+  /* Clay palette — light (claymorphism's native mode) */
+  --clay-bg: #F5F2FB;
+  --clay-surface: #FFFFFF;
+  --clay-primary: #8B7CF6;
+  --clay-primary-deep: #6D5BD0;
+  --clay-accent: #FFB4A2;
+  --clay-success: #8FD9B6;
+  --clay-success-tint: #E6F6EE;
+  --clay-danger: #EF7C6E;
+  --clay-danger-tint: #FDECEA;
+  --clay-text: #332F3A;
+  --clay-text-sub: #635F69;
+
+  /* Depth — light: soft outer shadow + inset highlight */
+  --clay-shadow: 6px 6px 16px rgba(139,124,246,0.15), inset -2px -2px 6px rgba(255,255,255,0.6);
+  --clay-shadow-press: 3px 3px 8px rgba(139,124,246,0.18) inset;
+  --clay-focus-ring: 0 0 0 3px rgba(139,124,246,0.45);
+}
