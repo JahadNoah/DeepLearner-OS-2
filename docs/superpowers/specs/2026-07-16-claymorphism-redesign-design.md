@@ -69,10 +69,13 @@ decision), the only change needed is the fallback in `ThemeContext.jsx:7`
 (`localStorage.getItem(...) || "dark"` → `|| "light"`) — a one-line change, not a restructure.
 
 Typography: **Nunito** (headings, weight 800/900) replaces Sora; **DM Sans** (body) stays as-is
-(already loaded via the existing Google Fonts `@import`). Multilingual fallback fonts (Chinese/
-Tamil) were considered and dropped — the app only supports `ms`/`en` today (checked
-`i18n/translations.js`, `LanguageContext.jsx`), and adding font-family names without also
-importing those font files would be inert dead weight, not real future-proofing.
+(already loaded via the existing Google Fonts `@import`). Fallback font *names* for Noto Sans SC
+/ Noto Sans Tamil are included in the `--clay-font-head`/`--clay-font-body` stacks — free to keep
+since consumers only ever reference the token, never the literal list, so there's no retrofit
+cost either way. Not adding an actual `@import` for those font files, though: the app only
+supports `ms`/`en` today (checked `i18n/translations.js`, `LanguageContext.jsx`), and loading
+unused CJK/Tamil font files would be real, avoidable page weight for scripts nothing renders yet.
+Add the `@import` when Chinese/Tamil UI strings actually exist.
 
 Shape & shadow:
 - Radius: 24px cards, 16px buttons/inputs, full pill for tags/badges.
