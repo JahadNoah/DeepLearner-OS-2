@@ -37,27 +37,55 @@ partial in dark mode** — hence the light-mode-primary decision above.
 
 ## Design tokens
 
-| Token | Value | Use |
-|---|---|---|
-| `--clay-bg` | `#F5F2FB` | Page background (light) |
-| `--clay-primary` | `#8B7CF6` | Primary buttons, active states, links |
-| `--clay-primary-deep` | `#6D5BD0` | Text-on-primary, hover states |
-| `--clay-accent` | `#FFB4A2` | Secondary CTAs, streaks/highlights |
-| `--clay-success` | `#8FD9B6` | Success states, quiz correct answers |
-| `--clay-surface` | `#FFFFFF` | Card backgrounds |
-| `--clay-text` | `#332F3A` | Primary text |
-| `--clay-text-sub` | `#635F69` | Secondary text |
+Contrast-checked (WCAG relative luminance): `--clay-primary` (#8B7CF6) only reaches ~3.3:1
+against white text — fails AA for normal text, so it's restricted to accents/active
+states/links and never used as a background under white text. `--clay-primary-deep` (#6D5BD0)
+reaches ~5.16:1 and is the actual button background wherever white text sits on top.
 
-Dark variant: same hue relationships, deepened onto `#211E29` base rather than true black —
-adapted, not the primary showcase.
+| Token | Light value | Dark value | Use |
+|---|---|---|---|
+| `--clay-bg` | `#F5F2FB` | `#211E29` | Page background |
+| `--clay-surface` | `#FFFFFF` | `#2B2735` | Card backgrounds |
+| `--clay-primary` | `#8B7CF6` | `#A594F9` | Accents, active states, links — **not** a white-text bg |
+| `--clay-primary-deep` | `#6D5BD0` | `#8B7CF6` | Button bg w/ white text (AA pass), hover states |
+| `--clay-accent` | `#FFB4A2` | `#FFB4A2` | Secondary CTAs, streaks/highlights |
+| `--clay-success` | `#8FD9B6` | `#8FD9B6` | Success/correct-answer accent |
+| `--clay-success-tint` | `#E6F6EE` | `#24463A` | Correct-answer background (dark text/icon on top) |
+| `--clay-danger` | `#EF7C6E` | `#EF7C6E` | Danger/wrong-answer accent |
+| `--clay-danger-tint` | `#FDECEA` | `#4A2A28` | Wrong-answer background (dark text/icon on top) |
+| `--clay-text` | `#332F3A` | `#EDEAF2` | Primary text |
+| `--clay-text-sub` | `#635F69` | `#A6A1B0` | Secondary text |
+
+Quiz correct/wrong states pair color with a Lucide check/X icon — never color alone (the
+current `.quiz-option.correct`/`.wrong` classes in `index.css` are color-only today; this is a
+real accessibility gap being fixed, not just a new-feature nicety).
+
+**Theming mechanism — matches the codebase's existing convention exactly, not inverted:**
+`ThemeContext.jsx` only ever toggles a `theme-light` class (never `theme-dark`); bare `:root` is
+already the dark styling for every other token set in `index.css` (`--proto-*`, the legacy
+`--primary` etc.). So `--clay-*` follows the same shape: dark values live on bare `:root`, light
+values live under `.theme-light`. To make light the default for new users (this design's
+decision), the only change needed is the fallback in `ThemeContext.jsx:7`
+(`localStorage.getItem(...) || "dark"` → `|| "light"`) — a one-line change, not a restructure.
 
 Typography: **Nunito** (headings, weight 800/900) replaces Sora; **DM Sans** (body) stays as-is
-(already loaded via the existing Google Fonts `@import`).
+(already loaded via the existing Google Fonts `@import`). Multilingual fallback fonts (Chinese/
+Tamil) were considered and dropped — the app only supports `ms`/`en` today (checked
+`i18n/translations.js`, `LanguageContext.jsx`), and adding font-family names without also
+importing those font files would be inert dead weight, not real future-proofing.
 
-Shape & shadow: 24px card radius, 16px button/input radius, full pill for tags/badges. No hard
-borders — depth via dual shadow: soft outer (`6px 6px 16px rgba(139,124,246,0.15)`) + subtle
-inset highlight (`inset -2px -2px 6px rgba(255,255,255,0.6)`). Press feedback: scale to 0.97,
-spring/cubic-bezier easing, 150–200ms, matching existing animation conventions in `index.css`.
+Shape & shadow:
+- Radius: 24px cards, 16px buttons/inputs, full pill for tags/badges.
+- Light mode: no hard borders — depth via dual shadow, soft outer (`6px 6px 16px
+  rgba(139,124,246,0.15)`) + subtle inset highlight (`inset -2px -2px 6px rgba(255,255,255,0.6)`).
+- Dark mode: the light recipe goes flat on a dark surface, so dark uses glow + hairline instead
+  of a recolored version of the same shadow — `0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0
+  rgba(255,255,255,0.06)`.
+- Press feedback: scale to 0.97, spring/cubic-bezier easing, 150–200ms, matching existing
+  animation conventions in `index.css`.
+- Focus: a visible `--clay-focus-ring` (`0 0 0 3px` of the primary color at reduced opacity) on
+  every interactive element — claymorphism's soft edges swallow default browser focus outlines,
+  so this needs to be explicit rather than assumed.
 
 Icons: unchanged — Lucide, as already used throughout.
 
@@ -71,15 +99,21 @@ the same structure, rather than introducing Tailwind `@theme` config or `cva`-ba
 
 ## Rollout plan
 
-1. Add `--clay-*` tokens + core utility classes to `index.css`.
-2. Rebuild Dashboard using them — show running locally (not pushed to git, to avoid triggering
-   an unwanted Vercel deploy on WIP) for review.
-3. Once approved, roll the same classes across the remaining pages and shared chrome, one at a
+1. Add `--clay-*` tokens (dark on bare `:root`, light under `.theme-light`, per the theming
+   mechanism above) + core utility classes to `index.css`.
+2. Flip the default-theme fallback in `ThemeContext.jsx:7` from `"dark"` to `"light"`.
+3. Rebuild Dashboard using the new tokens/classes — show running locally (not pushed to git, to
+   avoid triggering an unwanted Vercel deploy on WIP) for review.
+4. Once approved, roll the same classes across the remaining pages and shared chrome, one at a
    time.
 
 ## Testing / verification
 
 Visual review only (no new business logic). For each page as it's converted: confirm in the
 local dev server that both light and dark variants render with readable contrast (4.5:1 body
-text minimum), interactive states (hover/press/disabled) are visually distinct, and no existing
-functionality (uploads, quiz flow, history list, language toggle) regresses.
+text minimum), interactive states (hover/press/disabled/focus) are visually distinct, and no
+existing functionality (uploads, quiz flow, history list, language toggle) regresses.
+
+History specifically: test with a long list (20+ items). Dual box-shadows on many cards can
+jank on scroll on lower-end devices — if it does, fall back to a lighter single-shadow variant
+for list-context cards rather than the full dual-shadow recipe.
