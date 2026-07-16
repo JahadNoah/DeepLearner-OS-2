@@ -268,9 +268,9 @@ export default function Quiz() {
         {/* Enrichment banner */}
         {enriching && (
           <div style={{
-            background: "rgba(184,92,0,0.12)", border: "1px solid var(--amber)",
+            background: "var(--clay-primary-glow)", border: "1px solid var(--clay-primary-deep)",
             borderRadius: "10px", padding: "10px 16px", marginBottom: "12px",
-            fontSize: "12px", color: "var(--amber)", display: "flex", alignItems: "center", gap: "8px"
+            fontSize: "12px", color: "var(--clay-text)", display: "flex", alignItems: "center", gap: "8px"
           }}>
             <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px" }} />
             {lang === "ms" ? "AI sedang memperkaya penjelasan..." : "AI is enriching explanations..."}

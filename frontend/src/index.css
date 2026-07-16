@@ -8,10 +8,12 @@
   --primary-glow: rgba(94, 106, 210, 0.4);
   --secondary: #FF6584;
   --accent: #43E8D8;
-  --amber:       #B85C00;
-  --amber-dark:  #8B4300;
-  --amber-light: #D97706;
-  --amber-glow:  rgba(184,92,0,0.18);
+  /* Repointed to clay purple (Phase 2). Text-safe on surfaces (= --clay-link dark);
+     solid-bg classes use --clay-primary-deep explicitly instead. */
+  --amber:       #A594F9;
+  --amber-dark:  #8677D0;
+  --amber-light: #C4B8FC;
+  --amber-glow:  rgba(165,148,249,0.18);
   --bg: #0E0F11;
   --surface: rgba(255, 255, 255, 0.025);
   --surface-hover: rgba(255, 255, 255, 0.05);
@@ -42,10 +44,10 @@
   --primary-glow: rgba(76, 86, 182, 0.18);
   --secondary: #E11D48;
   --accent: #0D9488;
-  --amber:       #D97706;
-  --amber-dark:  #B85C00;
-  --amber-light: #F59E0B;
-  --amber-glow:  rgba(217, 119, 6, 0.18);
+  --amber:       #6D5BD0;
+  --amber-dark:  #5849A8;
+  --amber-light: #8B7CF6;
+  --amber-glow:  rgba(109,91,208,0.18);
   --bg: #EEF2FF;
   --surface: #FFFFFF;
   --surface-hover: #F5F7FF;
@@ -6179,10 +6181,10 @@ textarea.input {
 /* Prototype Theme Variables */
 :root {
   /* Amber Accent Colors */
-  --amber: #B85C00;
-  --amber-dark: #8B4300;
-  --amber-light: #D97706;
-  --amber-glow: rgba(184,92,0,0.18);
+  --amber: #A594F9;
+  --amber-dark: #8677D0;
+  --amber-light: #C4B8FC;
+  --amber-glow: rgba(165,148,249,0.18);
 
   /* Dark Theme Backgrounds & Surfaces (default) */
   --bg: rgba(20, 18, 16, 0.75);
@@ -6225,30 +6227,30 @@ textarea.input {
   /* Amber colors (unchanged, match existing) */
   /* Using existing --amber, --amber-dark, --amber-light, --amber-glow */
 
-  /* Dark Theme Backgrounds & Surfaces */
-  --proto-bg: rgba(20, 18, 16, 0.75);
-  --proto-surface: rgba(30, 27, 24, 0.65);
-  --proto-surface2: rgba(40, 36, 32, 0.5);
-  --proto-border: rgba(46, 42, 38, 0.5);
+  /* Backgrounds & Surfaces — repointed to clay dark (Phase 2 Tasks 5-8) */
+  --proto-bg: #211E29;
+  --proto-surface: #2B2735;
+  --proto-surface2: #34303F;
+  --proto-border: rgba(139,124,246,0.12);
 
-  /* Dark Theme Text Colors */
-  --proto-text: #F0EDE8;
-  --proto-text-2: #A89E94;
-  --proto-text-3: #6B625A;
+  /* Text Colors — clay dark */
+  --proto-text: #EDEAF2;
+  --proto-text-2: #A6A1B0;
+  --proto-text-3: #948FA0;
 
   /* Layout Dimensions */
   --proto-sidebar-w: 220px;
   --proto-topbar-h: 60px;
 
-  /* Design Tokens */
-  --proto-radius: 14px;
-  --proto-shadow: 0 2px 16px rgba(0,0,0,0.4);
-  --proto-shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+  /* Design Tokens — clay depth/shape */
+  --proto-radius: 18px;
+  --proto-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  --proto-shadow-lg: 0 12px 32px rgba(0,0,0,0.42);
   --proto-glass-blur: blur(16px);
 
-  /* Typography */
-  --proto-font: 'Sora', sans-serif;
-  --proto-font-body: 'DM Sans', sans-serif;
+  /* Typography — clay */
+  --proto-font: 'Nunito', 'Noto Sans SC', 'Noto Sans Tamil', sans-serif;
+  --proto-font-body: 'DM Sans', 'Noto Sans SC', 'Noto Sans Tamil', sans-serif;
 
   /* Transitions */
   --proto-transition: 0.22s cubic-bezier(.4,0,.2,1);
@@ -6266,15 +6268,16 @@ textarea.input {
   --shadow: 0 2px 16px rgba(0,0,0,0.07);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
 
-  --proto-bg: rgba(244, 241, 236, 0.65);
-  --proto-surface: rgba(255, 255, 255, 0.5);
-  --proto-surface2: rgba(238, 235, 229, 0.5);
-  --proto-border: rgba(224, 221, 214, 0.5);
-  --proto-text: #1A1714;
-  --proto-text-2: #5C5650;
-  --proto-text-3: #9E988F;
-  --proto-shadow: 0 2px 16px rgba(0,0,0,0.07);
-  --proto-shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  /* --proto-* repointed to clay light (Phase 2 Tasks 5-8) */
+  --proto-bg: #F5F2FB;
+  --proto-surface: #FFFFFF;
+  --proto-surface2: #EFEBF8;
+  --proto-border: rgba(139,124,246,0.12);
+  --proto-text: #332F3A;
+  --proto-text-2: #635F69;
+  --proto-text-3: #726E7C;
+  --proto-shadow: 6px 6px 16px rgba(139,124,246,0.15), inset -2px -2px 6px rgba(255,255,255,0.6);
+  --proto-shadow-lg: 10px 10px 28px rgba(139,124,246,0.18);
 }
 
 /* ============================================================
@@ -6294,8 +6297,8 @@ textarea.input {
 }
 
 .proto-card-amber {
-  background: var(--amber);
-  border-color: var(--amber);
+  background: var(--clay-primary-deep);
+  border-color: var(--clay-primary-deep);
   color: #fff;
 }
 
@@ -6316,14 +6319,14 @@ textarea.input {
 }
 
 .proto-btn-primary {
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
-  border: 1px solid var(--amber);
+  border: 1px solid var(--clay-primary-deep);
+  box-shadow: var(--clay-shadow);
 }
 
 .proto-btn-primary:hover {
-  background: var(--amber-dark);
-  border-color: var(--amber-dark);
+  box-shadow: 0 6px 18px rgba(109,91,208,0.35);
 }
 
 .proto-btn-primary:disabled {
@@ -6630,9 +6633,9 @@ textarea.input {
 }
 
 .proto-chip.selected {
-  background: var(--amber-glow);
-  border-color: var(--amber);
-  color: var(--amber);
+  background: var(--clay-primary-glow);
+  border-color: var(--clay-primary-deep);
+  color: var(--clay-text); /* purple text on the glow tint fails AA (~4.1:1) */
   font-weight: 600;
 }
 
@@ -6736,7 +6739,7 @@ textarea.input {
 
 .proto-quiz-progress-fill {
   height: 100%;
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   transition: width 0.3s ease;
 }
 
@@ -6789,8 +6792,8 @@ textarea.input {
 }
 
 .proto-quiz-option.selected .proto-quiz-letter-badge {
-  background: var(--amber);
-  border-color: var(--amber);
+  background: var(--clay-primary-deep);
+  border-color: var(--clay-primary-deep);
   color: #fff;
 }
 
@@ -6824,7 +6827,7 @@ textarea.input {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
   display: flex;
   align-items: center;
@@ -6905,7 +6908,7 @@ textarea.input {
 }
 
 .proto-mode-tab.active {
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
   font-weight: 600;
 }
@@ -7054,15 +7057,15 @@ textarea.input {
 }
 
 .proto-step-circle.done {
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
-  box-shadow: 0 0 0 3px var(--amber-glow);
+  box-shadow: 0 0 0 3px var(--clay-primary-glow);
 }
 
 .proto-step-circle.active {
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
-  box-shadow: 0 0 0 4px var(--amber-glow), 0 0 12px rgba(184,92,0,0.35);
+  box-shadow: 0 0 0 4px var(--clay-primary-glow), 0 0 12px rgba(109,91,208,0.35);
 }
 
 .proto-step-circle.pending {
@@ -7090,7 +7093,7 @@ textarea.input {
   border-radius: 1px;
   transition: background var(--proto-transition);
 }
-.proto-step-line.done { background: var(--amber); }
+.proto-step-line.done { background: var(--clay-primary-deep); }
 .proto-step-line.pending { background: var(--proto-border); }
 
 /* ─── AI Ready Badge ─────────────────────────────────────── */
@@ -7118,7 +7121,7 @@ textarea.input {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--amber);
+  color: var(--clay-text); /* on the badge's glow tint — purple text fails AA */
   margin-bottom: 6px;
 }
 
@@ -7126,7 +7129,7 @@ textarea.input {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   animation: pulse 1.8s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -7208,7 +7211,7 @@ textarea.input {
 
 .proto-score-ring-fill {
   fill: none;
-  stroke: var(--amber);
+  stroke: var(--clay-primary-deep);
   stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 251;
