@@ -59,7 +59,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
             style={{
               marginTop: "8px",
               padding: "8px",
-              background: "var(--proto-surface2)",
+              background: "var(--clay-surface-2)",
               borderRadius: "8px",
               fontSize: "12px"
             }}
@@ -76,7 +76,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
                 borderRadius: "6px",
                 transition: "background 0.2s"
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--proto-surface)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--clay-surface)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
@@ -95,7 +95,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
                 borderRadius: "6px",
                 transition: "background 0.2s"
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--proto-surface)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--clay-surface)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <Globe size={14} />
@@ -113,12 +113,12 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
                 cursor: "pointer",
                 borderRadius: "6px",
                 transition: "background 0.2s",
-                color: "#f44336",
+                color: "var(--clay-danger)",
                 marginTop: "4px",
-                borderTop: "1px solid var(--proto-border)",
+                borderTop: "1px solid rgba(139,124,246,0.12)",
                 paddingTop: "12px"
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--proto-surface)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--clay-surface)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <LogOut size={14} />

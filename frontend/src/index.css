@@ -6403,11 +6403,13 @@ textarea.input {
 }
 
 /* ─── Sidebar ────────────────────────────────────────────── */
+/* Sidebar chrome — converted to clay (Phase 2 Task 1). Class names kept
+   (only Sidebar.jsx uses them); amber → purple, proto tokens → clay tokens. */
 .proto-sidebar {
   width: var(--proto-sidebar-w);
   min-width: var(--proto-sidebar-w);
-  background: var(--proto-surface);
-  border-right: 1px solid var(--proto-border);
+  background: var(--clay-surface);
+  border-right: 1px solid rgba(139,124,246,0.12);
   backdrop-filter: var(--proto-glass-blur);
   -webkit-backdrop-filter: var(--proto-glass-blur);
   display: flex;
@@ -6423,20 +6425,20 @@ textarea.input {
 
 .proto-sidebar-logo {
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--proto-border);
+  border-bottom: 1px solid rgba(139,124,246,0.12);
 }
 
 .proto-sidebar-logo .brand {
-  font-family: var(--proto-font);
+  font-family: var(--clay-font-head);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--proto-text);
+  color: var(--clay-text);
 }
 
 .proto-sidebar-logo .sub {
   font-size: 10px;
-  color: var(--proto-text-3);
+  color: var(--clay-text-3);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-top: 2px;
@@ -6454,14 +6456,14 @@ textarea.input {
 }
 
 .proto-sidebar-user:hover {
-  background: var(--proto-surface2);
+  background: var(--clay-surface-2);
 }
 
 .proto-sidebar-user .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6473,12 +6475,12 @@ textarea.input {
 .proto-sidebar-user .name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--proto-text);
+  color: var(--clay-text);
 }
 
 .proto-sidebar-user .role {
   font-size: 10px;
-  color: var(--proto-text-3);
+  color: var(--clay-text-3);
 }
 
 .proto-nav-section {
@@ -6494,21 +6496,29 @@ textarea.input {
   margin-bottom: 2px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--proto-text-2);
+  color: var(--clay-text-sub);
   cursor: pointer;
   transition: all var(--proto-transition);
   text-decoration: none;
 }
 
 .proto-nav-item:hover {
-  background: var(--proto-surface2);
-  color: var(--proto-text);
+  background: var(--clay-surface-2);
+  color: var(--clay-text);
 }
 
+/* Active: purple-glow tint + purple left accent bar + full-contrast text.
+   (Purple *text* on the tint fails AA ~4.1:1 — the accent bar carries the color.) */
 .proto-nav-item.active {
-  background: var(--amber-glow);
-  color: var(--amber);
+  background: var(--clay-primary-glow);
+  color: var(--clay-text);
   font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--clay-primary-deep);
+}
+
+.proto-nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-focus-ring);
 }
 
 .proto-nav-item .icon {
@@ -6521,23 +6531,29 @@ textarea.input {
   margin: auto 16px 0;
   padding: 11px 16px;
   border-radius: 12px;
-  background: var(--amber);
+  background: var(--clay-primary-deep);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  font-family: var(--proto-font);
+  font-family: var(--clay-font-head);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background var(--proto-transition);
+  box-shadow: var(--clay-shadow);
+  transition: box-shadow var(--proto-transition);
   cursor: pointer;
   border: none;
   outline: none;
 }
 
 .proto-sidebar-cta:hover {
-  background: var(--amber-dark);
+  box-shadow: 0 6px 18px rgba(109,91,208,0.35);
+}
+
+.proto-sidebar-cta:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-focus-ring);
 }
 
 /* ─── Topbar Tabs ────────────────────────────────────────── */
