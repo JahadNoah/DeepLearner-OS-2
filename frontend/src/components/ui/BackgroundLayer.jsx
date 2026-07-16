@@ -5,11 +5,12 @@ export function BackgroundLayer() {
   const { theme, videoMode } = useTheme();
   const isDark = theme !== "light";
 
-  // Light mode: White/cream tones | Dark mode: Black/dark tones
+  // Clay bg tones (Phase 2): light = cream/lavender around --clay-bg #F5F2FB;
+  // dark = charcoal around --clay-bg #211E29. Kept subtle — clay cards sit on top.
   const meshColors = isDark
-    ? ["#000000", "#0a0a0a", "#111111", "#080808"] // Pure black/dark
-    : ["#ffffff", "#fafafa", "#f5f5f5", "#ffffff"]; // Pure white/light
-  const meshBg = isDark ? "#000000" : "#ffffff";
+    ? ["#211E29", "#1B1822", "#2B2735", "#181520"] // clay charcoal/purple-dark
+    : ["#F5F2FB", "#EFEBF8", "#F5F2FB", "#E8E2F6"]; // clay cream/lavender
+  const meshBg = isDark ? "#211E29" : "#F5F2FB";
 
   return (
     <>
