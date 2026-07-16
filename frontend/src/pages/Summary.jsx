@@ -142,16 +142,22 @@ export default function Summary() {
 
   if (!summary) {
     return (
-      <>
-        <div className="proto-content">
-          <div className="proto-card" style={{ textAlign: "center", padding: "48px" }}>
-            <p style={{ color: "var(--proto-text)", marginBottom: "16px" }}>{error || t(lang, "summary.notFound")}</p>
-            <button className="proto-btn-primary" onClick={() => navigate("/input")}>
-              {t(lang, "summary.backBtn")}
-            </button>
+      <div className="proto-content">
+        <div className="proto-card" style={{ maxWidth: "440px", margin: "56px auto", textAlign: "center", padding: "48px 40px" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "var(--clay-accent)", color: "var(--clay-on-accent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <FileText size={26} />
           </div>
+          <h2 style={{ fontFamily: "var(--clay-font-head)", fontSize: "18px", fontWeight: 700, color: "var(--clay-text)", margin: "0 0 8px" }}>
+            {error || t(lang, "summary.notFound")}
+          </h2>
+          <p style={{ color: "var(--clay-text-sub)", fontSize: "13px", lineHeight: 1.6, maxWidth: "320px", margin: "0 auto 24px" }}>
+            {t(lang, "proto.notFoundHint")}
+          </p>
+          <button className="proto-btn proto-btn-primary" onClick={() => navigate("/input")}>
+            {t(lang, "summary.backBtn")}
+          </button>
         </div>
-      </>
+      </div>
     );
   }
 

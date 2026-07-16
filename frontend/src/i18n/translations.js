@@ -213,8 +213,8 @@ const strings = {
         history: {
             heading: "📚 Sejarah Nota",
             subtitle: "Semua sesi pembelajaran yang telah disimpan.",
-            newSession: "+ Sesi Baharu",
-            searchPlaceholder: "🔍 Cari nota...",
+            newSession: "Sesi Baharu",
+            searchPlaceholder: "Cari nota...",
             emptyHeading: "Tiada nota dijumpai",
             emptySearch: "Cuba carian lain.",
             emptyDefault: "Mulakan sesi pembelajaran baharu untuk simpan nota pertama anda!",
@@ -284,6 +284,7 @@ const strings = {
             history: "Sejarah",
             profile: "Profile",
             settings: "Settings",
+            notFoundHint: "Item ini mungkin telah dipadam atau pautannya tidak sah. Mulakan sesi baharu untuk meneruskan.",
             // Input Panel
             sessionTitlePlaceholder: "cth: Kuliah Sejarah 10/3",
             pasteMode: "Tampal Teks",
@@ -552,8 +553,8 @@ const strings = {
         history: {
             heading: "📚 Note History",
             subtitle: "All your saved learning sessions.",
-            newSession: "+ New Session",
-            searchPlaceholder: "🔍 Search notes...",
+            newSession: "New Session",
+            searchPlaceholder: "Search notes...",
             emptyHeading: "No notes found",
             emptySearch: "Try a different search.",
             emptyDefault: "Start a new learning session to save your first note!",
@@ -621,6 +622,7 @@ const strings = {
             // Sidebar
             newSession: "New Session",
             history: "History",
+            notFoundHint: "This item may have been deleted or the link is invalid. Start a new session to continue.",
             profile: "Profile",
             settings: "Settings",
             // Input Panel

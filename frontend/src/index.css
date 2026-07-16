@@ -6303,19 +6303,35 @@ textarea.input {
 }
 
 /* ─── Buttons ────────────────────────────────────────────── */
-.proto-btn {
+/* Variants carry the base layout too, so they work standalone (e.g.
+   className="proto-btn-primary" without "proto-btn") — otherwise the icon +
+   label lose inline-flex/nowrap and stack/wrap. */
+.proto-btn,
+.proto-btn-primary,
+.proto-btn-outline,
+.proto-btn-ghost {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 20px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   font-family: var(--proto-font-body);
+  white-space: nowrap;
+  text-decoration: none;
   transition: all var(--proto-transition);
   cursor: pointer;
   border: none;
   outline: none;
+}
+
+.proto-btn-primary:focus-visible,
+.proto-btn-outline:focus-visible,
+.proto-btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-focus-ring);
 }
 
 .proto-btn-primary {
