@@ -72,11 +72,54 @@ token for a job it wasn't designed for (a "button background" token used as text
 tokens to new pages, check *what surface* each color/text pairing actually sits on in *each*
 theme — don't assume a token that passed AA in one usage automatically passes in another.
 
-## Phase 2 (planned, not started)
+## Phase 2 (DONE — code complete, reviewed)
 
-**Plan:** `docs/superpowers/plans/2026-07-16-claymorphism-phase2-rollout.md` — written after the
-Phase 1 review checkpoint, sequenced chrome-first, task-by-task with per-task build+browser
-verify and commits, plus two ⏸ review checkpoints.
+The whole authenticated app is now on the clay system. Chrome + all six routed pages converted,
+reviewed in the browser (Checkpoint A + B passed), builds green throughout.
+
+**Plan:** `docs/superpowers/plans/2026-07-16-claymorphism-phase2-rollout.md` — sequenced
+chrome-first, task-by-task with per-task build+browser verify and commits, plus two ⏸ review
+checkpoints.
+
+**What shipped (commits `34a034e`..`50b89ff`):**
+- Task 0: clay foundation tokens (`--clay-surface-2`, `--clay-text-3`, `--clay-primary-glow`);
+  deleted dead `TopHeader.jsx`; removed dead Dashboard `ACCENT` const.
+- Task 1: Sidebar → clay (purple CTA + active state).
+- Task 2: BackgroundLayer mesh → clay cream/charcoal.
+- Task 3: InputPage → clay + full i18n (`inputPage` section) + placeholder filler removed.
+- Tasks 5-8: Transcript/Summary/Quiz/History converted by **repointing the shared `--proto-*`
+  and `--amber` tokens** to clay values (safe — Landing/Login/Register verified to use neither),
+  plus 13 role-correct class fixes where amber was a solid bg (→ `--clay-primary-deep`) or
+  text-on-tint (→ `--clay-text`).
+- Polish: fixed a standalone-button layout bug (`.proto-btn-primary/-outline/-ghost` now carry
+  the base layout), doubled glyphs on History (literal `+`/`🔍` next to icons), redesigned the
+  bare not-found/error states (Summary/Transcript/Quiz) into proper empty states, converted harsh
+  red error boxes to `--clay-danger`.
+
+**Two dead files found along the way (NOT converted):**
+- `TopHeader.jsx` — deleted (rendered nowhere).
+- `AudioInput.jsx` — **left in place, still on the old amber system.** Not routed (`/input` uses
+  `InputPage`), but it has features InputPage lacks (live mic recording + SSE progress). It's the
+  only file still holding hardcoded amber. **Open decision for the user:** revive/route it, salvage
+  its recording feature into InputPage, or delete it.
+
+**Known residual (minor, optional):**
+- Quiz correct/wrong answer feedback is still green/red (`#00e676`/`#f44336`) — kept intentionally
+  (semantically standard; clay-success mint would weaken the signal).
+- Transcript/Summary/Quiz/History still have some inline `lang === "ms" ? …` bilingual strings —
+  they render correctly, just not centralized in `translations.js` (unlike InputPage's, which were
+  Malay-only and got fixed).
+- A thin dark strip reported at the very top of the History page in one screenshot — not yet
+  reproduced/root-caused; may be a screenshot artifact.
+
+**Verified with backend down** (frontend-only): Summary/Quiz/Transcript correctly fall into their
+(now redesigned) not-found states.
+
+---
+
+## Original Phase 2 plan notes (kept for reference)
+
+**Plan:** `docs/superpowers/plans/2026-07-16-claymorphism-phase2-rollout.md`
 
 Three directional **decisions locked with the user** before the plan was written (they shape
 everything, so don't silently revisit them):
