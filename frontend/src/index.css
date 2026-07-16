@@ -7327,7 +7327,7 @@ textarea.input {
   gap: 5px;
   font-size: 10px;
   letter-spacing: 0.06em;
-  color: var(--proto-text-3);
+  color: var(--proto-text-2); /* text-3 fails AA on --proto-surface2; use text-2 (= clay-text-sub) */
   padding: 4px 10px;
   border-radius: 100px;
   border: 1px solid var(--proto-border);

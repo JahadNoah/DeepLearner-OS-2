@@ -196,8 +196,8 @@ export default function Summary() {
         {/* Error / Success Messages */}
         {error && (
           <div style={{
-            background: "rgba(244,67,54,0.1)", border: "1px solid #f44336",
-            borderRadius: "10px", padding: "12px 16px", marginBottom: "20px", color: "#f44336", fontSize: "13px",
+            background: "var(--clay-danger-tint)", border: "1px solid var(--clay-danger)",
+            borderRadius: "10px", padding: "12px 16px", marginBottom: "20px", color: "var(--clay-text)", fontSize: "13px",
           }}>
             {error}
           </div>

@@ -82,7 +82,7 @@ export default function History() {
 
             {/* Error */}
             {error && (
-                <div style={{ background: "rgba(244,67,54,0.1)", border: "1px solid #f44336", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", color: "#f44336", fontSize: "13px" }}>
+                <div style={{ background: "var(--clay-danger-tint)", border: "1px solid var(--clay-danger)", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", color: "var(--clay-text)", fontSize: "13px" }}>
                     {error}
                 </div>
             )}
@@ -143,7 +143,7 @@ export default function History() {
                             </button>
                             <button
                                 className="proto-btn-ghost"
-                                style={{ padding: "8px 10px", fontSize: "12px", color: "#f44336" }}
+                                style={{ padding: "8px 10px", fontSize: "12px", color: "var(--clay-danger)" }}
                                 disabled={deleting === note.id}
                                 onClick={() => handleDelete(note.id)}
                                 aria-label={deleteLabel}

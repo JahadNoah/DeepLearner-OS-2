@@ -149,12 +149,12 @@ export default function Transcript() {
         {/* Error Message */}
         {error && (
           <div style={{
-            background: "rgba(244,67,54,0.1)",
-            border: "1px solid #f44336",
+            background: "var(--clay-danger-tint)",
+            border: "1px solid var(--clay-danger)",
             borderRadius: "10px",
             padding: "12px 16px",
             marginBottom: "20px",
-            color: "#f44336",
+            color: "var(--clay-text)",
             fontSize: "13px",
           }}>
             {error}
