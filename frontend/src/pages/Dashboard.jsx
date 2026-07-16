@@ -97,14 +97,12 @@ export default function Dashboard() {
     }
   };
 
-  // Unified amber accent (was a clashing rainbow of per-card colors).
-  const ACCENT = "#B85C00";
   const features = [
-    { icon: <Mic size={20} />, title: t(lang, "dashboard.f1Title"), desc: t(lang, "dashboard.chip1Sub"), path: "/input", color: ACCENT },
-    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Sub"), path: "/input", color: ACCENT },
-    { icon: <Sparkles size={20} />, title: t(lang, "dashboard.f3Title"), desc: t(lang, "dashboard.chip2Sub"), path: "/input", color: ACCENT },
-    { icon: <HelpCircle size={20} />, title: t(lang, "dashboard.f4Title"), desc: t(lang, "dashboard.chip3Sub"), path: "/input", color: ACCENT },
-    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Sub"), path: "/history", color: ACCENT },
+    { icon: <Mic size={20} />, title: t(lang, "dashboard.f1Title"), desc: t(lang, "dashboard.chip1Sub"), path: "/input" },
+    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Sub"), path: "/input" },
+    { icon: <Sparkles size={20} />, title: t(lang, "dashboard.f3Title"), desc: t(lang, "dashboard.chip2Sub"), path: "/input" },
+    { icon: <HelpCircle size={20} />, title: t(lang, "dashboard.f4Title"), desc: t(lang, "dashboard.chip3Sub"), path: "/input" },
+    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Sub"), path: "/history" },
   ];
 
   return (

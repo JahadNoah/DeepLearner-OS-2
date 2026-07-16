@@ -7347,6 +7347,7 @@ textarea.input {
   /* Clay palette — dark (bare root) */
   --clay-bg: #211E29;
   --clay-surface: #2B2735;
+  --clay-surface-2: #34303F;     /* recessed fill / input wells (replaces --proto-surface2). NOTE: --clay-text-3 fails AA here — use --clay-text-sub for text on this surface */
   --clay-primary: #A594F9;       /* accents, active states, links — NOT a white-text bg */
   --clay-primary-deep: #6D5BD0;  /* button bg w/ white text (~5.18:1 contrast, AA pass), same value as light theme */
   --clay-accent: #FFB4A2;
@@ -7359,6 +7360,7 @@ textarea.input {
   --clay-danger-tint: #4A2A28;
   --clay-text: #EDEAF2;
   --clay-text-sub: #A6A1B0;
+  --clay-text-3: #948FA0;        /* faintest label tone (replaces --proto-text-3) — ~4.64:1 on --clay-surface (AA). NOT AA on --clay-surface-2 */
 
   /* Shape */
   --clay-radius-card: 24px;
@@ -7369,6 +7371,7 @@ textarea.input {
   --clay-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
   --clay-shadow-press: inset 0 2px 6px rgba(0,0,0,0.4);
   --clay-focus-ring: 0 0 0 3px rgba(165,148,249,0.55);
+  --clay-primary-glow: rgba(165,148,249,0.18); /* purple glow — replaces --amber-glow for shadows/hovers */
 
   /* Type — Noto Sans SC / Noto Sans Tamil are fallback *names* only, no @import.
      Harmless no-op for users without those fonts OS-installed; cheap to keep since
@@ -7383,6 +7386,7 @@ textarea.input {
   /* Clay palette — light (claymorphism's native mode) */
   --clay-bg: #F5F2FB;
   --clay-surface: #FFFFFF;
+  --clay-surface-2: #EFEBF8;     /* recessed fill / input wells (replaces --proto-surface2). NOTE: --clay-text-3 fails AA here — use --clay-text-sub for text on this surface */
   --clay-primary: #8B7CF6;
   --clay-primary-deep: #6D5BD0;
   --clay-accent: #FFB4A2;
@@ -7395,11 +7399,13 @@ textarea.input {
   --clay-danger-tint: #FDECEA;
   --clay-text: #332F3A;
   --clay-text-sub: #635F69;
+  --clay-text-3: #726E7C;        /* faintest label tone (replaces --proto-text-3) — ~4.96:1 on --clay-surface (AA). NOT AA on --clay-surface-2 */
 
   /* Depth — light: soft outer shadow + inset highlight */
   --clay-shadow: 6px 6px 16px rgba(139,124,246,0.15), inset -2px -2px 6px rgba(255,255,255,0.6);
   --clay-shadow-press: 3px 3px 8px rgba(139,124,246,0.18) inset;
   --clay-focus-ring: 0 0 0 3px rgba(139,124,246,0.45);
+  --clay-primary-glow: rgba(109,91,208,0.18); /* purple glow — replaces --amber-glow for shadows/hovers */
 }
 
 /* ============================================================
