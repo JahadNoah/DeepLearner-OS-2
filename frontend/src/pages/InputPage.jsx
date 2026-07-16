@@ -4,7 +4,7 @@ import { auth } from "../firebase";
 import axios from "axios";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { 
+import {
   FileText, UploadCloud, Info, Trash2, Bold, Sparkles, Link2, FileJson
 } from "lucide-react";
 
@@ -40,7 +40,7 @@ export default function InputPage() {
 
   const showApiError = (err, fallback) => {
     if (!err.response || err.response.status === 502 || err.response.status === 503) {
-      setError(lang === "ms" ? "Gagal menyambung ke pelayan AI. Sila cuba lagi." : "Failed to connect to AI server. Please try again.");
+      setError(t(lang, "inputPage.errConnect"));
       return;
     }
     const detail = err.response?.data?.detail;
@@ -58,7 +58,7 @@ export default function InputPage() {
 
   const handleSubmit = async () => {
     if (!text && !file) {
-      setError(lang === "ms" ? "Sila muat naik fail audio/dokumen atau tampal teks." : "Please upload an audio/document file or paste text.");
+      setError(t(lang, "inputPage.errNoInput"));
       return;
     }
     setError("");
@@ -89,77 +89,77 @@ export default function InputPage() {
       const res = await axios.post(`${API_URL}/extract-pdf`, formData);
       navigate(`/transcript/${res.data.IDtranskripsi}`, { state: { transcript: res.data } });
     } catch (err) {
-      showApiError(err, lang === "ms" ? "Gagal memproses input. Sila cuba lagi." : "Failed to process input. Please try again.");
+      showApiError(err, t(lang, "inputPage.errProcess"));
     } finally {
       setLoading(false);
     }
   };
 
+  // Soft peach icon chip — matches the Dashboard feature-tile treatment.
+  const iconChip = {
+    width: "48px", height: "48px", borderRadius: "12px",
+    background: "var(--clay-accent)", color: "var(--clay-on-accent)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  };
+
   return (
-    <div className="proto-content" style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", paddingBottom: "120px" }}>
+    <div className="proto-content" style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", paddingBottom: "48px" }}>
       {/* Header Area */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", paddingTop: "12px" }}>
         <div>
-          <div style={{ fontSize: "12px", color: "var(--proto-text-3)", marginBottom: "8px", fontWeight: "600", letterSpacing: "0.05em" }}>
-            Projects &nbsp;&nbsp;›&nbsp;&nbsp; <span style={{ color: "var(--amber)" }}>Langkah 1: Input Kandungan</span>
+          <div style={{ fontSize: "12px", color: "var(--clay-text-3)", marginBottom: "8px", fontWeight: "600", letterSpacing: "0.05em" }}>
+            {t(lang, "inputPage.breadcrumb")} &nbsp;&nbsp;›&nbsp;&nbsp; <span style={{ color: "var(--clay-link)" }}>{t(lang, "inputPage.step")}</span>
           </div>
-          <h1 style={{ fontFamily: "var(--proto-font)", fontSize: "28px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "12px", letterSpacing: "-0.02em" }}>
-            Pusat Sumber Penyelidikan
+          <h1 style={{ fontFamily: "var(--clay-font-head)", fontSize: "28px", fontWeight: 700, color: "var(--clay-text)", marginBottom: "12px", letterSpacing: "-0.02em" }}>
+            {t(lang, "inputPage.heading")}
           </h1>
-          <p style={{ color: "var(--proto-text-2)", fontSize: "14px", maxWidth: "600px", lineHeight: 1.6 }}>
-            Sediakan bahan akademik anda. AI kami akan memproses teks dan dokumen untuk menjana wawasan penyelidikan yang mendalam.
+          <p style={{ color: "var(--clay-text-sub)", fontSize: "14px", maxWidth: "600px", lineHeight: 1.6 }}>
+            {t(lang, "inputPage.subtitle")}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "16px" }}>
-          <button style={{ background: "transparent", border: "none", color: "var(--proto-text-2)", fontWeight: 600, fontSize: "14px", cursor: "pointer", transition: "color 0.2s" }} onMouseOver={(e) => e.target.style.color = "var(--proto-text)"} onMouseOut={(e) => e.target.style.color = "var(--proto-text-2)"}>
-            Simpan Draf
+          <button style={{ background: "transparent", border: "none", color: "var(--clay-text-sub)", fontWeight: 600, fontSize: "14px", cursor: "pointer", transition: "color 0.2s" }} onMouseOver={(e) => e.target.style.color = "var(--clay-text)"} onMouseOut={(e) => e.target.style.color = "var(--clay-text-sub)"}>
+            {t(lang, "inputPage.saveDraft")}
           </button>
-          <button 
-            style={{ 
-              background: "var(--amber)", color: "#fff", padding: "12px 28px", 
-              borderRadius: "24px", fontWeight: 600, fontSize: "14px", 
-              border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px",
-              boxShadow: "0 4px 12px rgba(184, 92, 0, 0.2)",
-              transition: "transform 0.2s, box-shadow 0.2s"
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(184, 92, 0, 0.3)"; }}
-            onMouseOut={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(184, 92, 0, 0.2)"; }}
-            onClick={handleSubmit} 
+          <button
+            className="clay-btn clay-btn-primary"
+            style={{ fontSize: "14px", padding: "12px 28px" }}
+            onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? "Memproses..." : "Seterusnya →"}
+            {loading ? t(lang, "inputPage.processing") : t(lang, "inputPage.next")}
           </button>
         </div>
       </div>
 
       {error && (
-        <div style={{ background: "rgba(244,67,54,0.1)", border: "1px solid #f44336", borderRadius: "12px", padding: "14px 20px", marginBottom: "24px", color: "#f44336", fontSize: "14px", fontWeight: 500 }}>
+        <div style={{ background: "var(--clay-danger-tint)", border: "1px solid var(--clay-danger)", borderRadius: "12px", padding: "14px 20px", marginBottom: "24px", color: "var(--clay-text)", fontSize: "14px", fontWeight: 500 }}>
           {error}
         </div>
       )}
 
       {/* Main Content Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: "24px", flex: 1 }}>
-          
+
         {/* LEFT COLUMN: Dokumen & Slaid */}
-        <div className="proto-card" style={{ padding: "32px", display: "flex", flexDirection: "column", height: "100%", borderRadius: "24px" }}>
+        <div className="clay-card" style={{ padding: "32px", display: "flex", flexDirection: "column", height: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
-            <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(184, 92, 0, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--amber)" }}>
-              <FileJson size={24} /> 
+            <div style={iconChip}>
+              <FileJson size={24} />
             </div>
             <div>
-              <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>Audio Kuliah & Dokumen</h2>
-              <div style={{ fontSize: "11px", color: "var(--proto-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>MP3, WAV, M4A &nbsp;·&nbsp; PDF, PPTX, DOCX</div>
+              <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.uploadTitle")}</h2>
+              <div style={{ fontSize: "11px", color: "var(--clay-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>{t(lang, "inputPage.uploadFormats")}</div>
             </div>
           </div>
-          
-          <div 
-            style={{ 
-              border: `2px dashed ${dragOver ? "var(--amber)" : "var(--proto-border)"}`, 
-              borderRadius: "20px", 
-              padding: "48px 24px", 
-              textAlign: "center", 
-              background: dragOver ? "var(--amber-glow)" : "transparent",
+
+          <div
+            style={{
+              border: `2px dashed ${dragOver ? "var(--clay-primary-deep)" : "rgba(139,124,246,0.30)"}`,
+              borderRadius: "20px",
+              padding: "48px 24px",
+              textAlign: "center",
+              background: dragOver ? "var(--clay-primary-glow)" : "transparent",
               transition: "all 0.2s ease",
               cursor: "pointer",
               flex: 1,
@@ -174,19 +174,19 @@ export default function InputPage() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", marginBottom: "24px", boxShadow: "0 8px 20px rgba(184, 92, 0, 0.2)" }}>
+            <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--clay-primary-deep)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", marginBottom: "24px", boxShadow: "0 8px 20px var(--clay-primary-glow)" }}>
               <UploadCloud size={28} />
             </div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--proto-text)", marginBottom: "8px", fontFamily: "var(--proto-font)" }}>Letakkan fail di sini</div>
-            <div style={{ fontSize: "13px", color: "var(--proto-text-3)", marginBottom: "32px" }}>atau klik untuk melayari fail anda</div>
-            
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.dropHere")}</div>
+            <div style={{ fontSize: "13px", color: "var(--clay-text-3)", marginBottom: "32px" }}>{t(lang, "inputPage.orBrowse")}</div>
+
             {file ? (
-              <div style={{ background: "var(--proto-surface2)", padding: "10px 20px", borderRadius: "20px", color: "var(--proto-text)", fontSize: "13px", fontWeight: 600, border: "1px solid var(--amber)", display: "flex", alignItems: "center", gap: "8px" }}>
-                <FileText size={16} color="var(--amber)" /> {file.name}
+              <div style={{ background: "var(--clay-surface-2)", padding: "10px 20px", borderRadius: "20px", color: "var(--clay-text)", fontSize: "13px", fontWeight: 600, border: "1px solid var(--clay-primary-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={16} color="var(--clay-link)" /> {file.name}
               </div>
             ) : (
-              <button style={{ background: "var(--proto-text)", color: "var(--proto-bg)", border: "none", padding: "14px 32px", borderRadius: "24px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.05em", cursor: "pointer", transition: "transform 0.2s, background 0.2s" }} onMouseOver={(e) => {e.target.style.transform="scale(1.02)";}} onMouseOut={(e) => {e.target.style.transform="scale(1)";}} onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                PILIH FAIL
+              <button style={{ background: "var(--clay-text)", color: "var(--clay-bg)", border: "none", padding: "14px 32px", borderRadius: "24px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.05em", cursor: "pointer", transition: "transform 0.2s" }} onMouseOver={(e) => {e.target.style.transform="scale(1.02)";}} onMouseOut={(e) => {e.target.style.transform="scale(1)";}} onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                {t(lang, "inputPage.chooseFile")}
               </button>
             )}
             <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.pdf,.pptx,.docx,.txt" hidden onChange={(e) => { if(e.target.files[0]) setFile(e.target.files[0]); }} />
@@ -195,8 +195,8 @@ export default function InputPage() {
           {/* Audio language selector — only relevant when an audio file is chosen */}
           {file && isAudioFile(file) && (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "20px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "12px", color: "var(--proto-text-2)", fontWeight: 600 }}>
-                {lang === "ms" ? "🎙️ Bahasa audio:" : "🎙️ Audio language:"}
+              <span style={{ fontSize: "12px", color: "var(--clay-text-sub)", fontWeight: 600 }}>
+                {t(lang, "inputPage.audioLang")}
               </span>
               {[["ms", "Bahasa Melayu"], ["en", "English"]].map(([val, label]) => (
                 <button
@@ -205,9 +205,9 @@ export default function InputPage() {
                   style={{
                     padding: "8px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
                     cursor: "pointer", transition: "all 0.2s",
-                    border: `1px solid ${language === val ? "var(--amber)" : "var(--proto-border)"}`,
-                    background: language === val ? "var(--amber)" : "transparent",
-                    color: language === val ? "#fff" : "var(--proto-text-2)",
+                    border: `1px solid ${language === val ? "var(--clay-primary-deep)" : "rgba(139,124,246,0.30)"}`,
+                    background: language === val ? "var(--clay-primary-deep)" : "transparent",
+                    color: language === val ? "#fff" : "var(--clay-text-sub)",
                   }}
                 >
                   {language === val ? "✓ " : ""}{label}
@@ -216,33 +216,33 @@ export default function InputPage() {
             </div>
           )}
 
-          <div style={{ background: "var(--proto-surface2)", borderRadius: "16px", padding: "16px 20px", display: "flex", gap: "12px", marginTop: "24px", alignItems: "flex-start" }}>
-            <div style={{ color: "var(--amber)", marginTop: "2px", background: "rgba(184, 92, 0, 0.15)", borderRadius: "50%", padding: "4px" }}><Info size={14} style={{ display: "block" }} /></div>
-            <div style={{ fontSize: "12px", color: "var(--proto-text-2)", lineHeight: 1.6, fontWeight: 500 }}>
-              Muat naik fail audio kuliah untuk transkripsi automatik, atau dokumen (PDF/PPTX/DOCX) untuk pengekstrakan teks — AI mengendalikan kedua-duanya.
+          <div style={{ background: "var(--clay-surface-2)", borderRadius: "16px", padding: "16px 20px", display: "flex", gap: "12px", marginTop: "24px", alignItems: "flex-start" }}>
+            <div style={{ color: "var(--clay-link)", marginTop: "2px", background: "rgba(109,91,208,0.15)", borderRadius: "50%", padding: "4px" }}><Info size={14} style={{ display: "block" }} /></div>
+            <div style={{ fontSize: "12px", color: "var(--clay-text-sub)", lineHeight: 1.6, fontWeight: 500 }}>
+              {t(lang, "inputPage.uploadInfo")}
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Text Area & Sub-cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px", height: "100%" }}>
-          
+
           {/* Top right card: Text Area */}
-          <div className="proto-card" style={{ padding: "32px", display: "flex", flexDirection: "column", flex: 1, borderRadius: "24px" }}>
+          <div className="clay-card" style={{ padding: "32px", display: "flex", flexDirection: "column", flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "var(--proto-text)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--proto-bg)" }}>
+                <div style={iconChip}>
                    <FileText size={24} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--proto-text)", fontFamily: "var(--proto-font)" }}>Tampal Teks Penyelidikan</h2>
-                  <div style={{ fontSize: "11px", color: "var(--proto-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>MANUAL ENTRY</div>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--clay-text)", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.pasteTitle")}</h2>
+                  <div style={{ fontSize: "11px", color: "var(--clay-text-3)", letterSpacing: "0.05em", marginTop: "4px", fontWeight: 600 }}>{t(lang, "inputPage.manualEntry")}</div>
                 </div>
               </div>
-              
-              <div style={{ display: "flex", alignItems: "center", gap: "20px", color: "var(--proto-text-3)" }}>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--proto-text)"} onMouseOut={(e) => e.currentTarget.style.color = "inherit"}><Bold size={20} /></button>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--proto-text)"} onMouseOut={(e) => e.currentTarget.style.color = "inherit"} onClick={() => setText("")}><Trash2 size={20} /></button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "20px", color: "var(--clay-text-3)" }}>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--clay-text)"} onMouseOut={(e) => e.currentTarget.style.color = "inherit"}><Bold size={20} /></button>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--clay-text)"} onMouseOut={(e) => e.currentTarget.style.color = "inherit"} onClick={() => setText("")}><Trash2 size={20} /></button>
               </div>
             </div>
 
@@ -250,76 +250,44 @@ export default function InputPage() {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Tampal petikan jurnal, nota lapangan, atau transkrip temu bual di sini untuk dianalisis oleh DeepLearner..."
+                placeholder={t(lang, "inputPage.pastePlaceholder")}
                 style={{
                   width: "100%",
                   height: "100%",
                   flex: 1,
-                  background: "var(--proto-surface2)",
+                  background: "var(--clay-surface-2)",
                   border: "none",
                   borderRadius: "16px",
                   padding: "24px",
                   fontSize: "15px",
-                  color: "var(--proto-text)",
-                  fontFamily: "var(--proto-font-body)",
+                  color: "var(--clay-text)",
+                  fontFamily: "var(--clay-font-body)",
                   resize: "none",
                   outline: "none",
                   lineHeight: 1.6
                 }}
               />
-              <div style={{ position: "absolute", bottom: "16px", right: "16px", background: "var(--proto-surface)", padding: "10px 16px", borderRadius: "20px", fontSize: "10px", fontWeight: 700, color: "var(--proto-text-3)", letterSpacing: "0.05em", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                {wordCount} / 50,000 PATAH PERKATAAN
+              <div style={{ position: "absolute", bottom: "16px", right: "16px", background: "var(--clay-surface)", padding: "10px 16px", borderRadius: "20px", fontSize: "10px", fontWeight: 700, color: "var(--clay-text-3)", letterSpacing: "0.05em", boxShadow: "var(--clay-shadow)" }}>
+                {t(lang, "inputPage.wordCount", { count: wordCount })}
               </div>
             </div>
           </div>
 
           {/* Bottom two small cards */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-            <div className="proto-card" style={{ padding: "24px", cursor: "pointer", transition: "all 0.2s", borderRadius: "20px" }} onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--amber)"; e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--proto-border)"; e.currentTarget.style.transform = "none"; }}>
-              <div style={{ color: "var(--proto-text-3)", marginBottom: "16px" }}><Sparkles size={24} /></div>
-              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "8px", fontFamily: "var(--proto-font)" }}>Analisis Pantas</div>
-              <div style={{ fontSize: "12px", color: "var(--proto-text-3)", lineHeight: 1.6 }}>Dapatkan ringkasan eksekutif secara automatik selepas input.</div>
+            <div className="clay-card" style={{ padding: "24px", cursor: "pointer" }}>
+              <div style={{ color: "var(--clay-text-3)", marginBottom: "16px" }}><Sparkles size={24} /></div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.quickTitle")}</div>
+              <div style={{ fontSize: "12px", color: "var(--clay-text-3)", lineHeight: 1.6 }}>{t(lang, "inputPage.quickDesc")}</div>
             </div>
-            <div className="proto-card" style={{ padding: "24px", cursor: "pointer", transition: "all 0.2s", borderRadius: "20px" }} onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--amber)"; e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--proto-border)"; e.currentTarget.style.transform = "none"; }}>
-              <div style={{ color: "var(--proto-text-3)", marginBottom: "16px" }}><Link2 size={24} /></div>
-              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "8px", fontFamily: "var(--proto-font)" }}>Import dari URL</div>
-              <div style={{ fontSize: "12px", color: "var(--proto-text-3)", lineHeight: 1.6 }}>Ambil kandungan terus dari laman web akademik atau blog.</div>
+            <div className="clay-card" style={{ padding: "24px", cursor: "pointer" }}>
+              <div style={{ color: "var(--clay-text-3)", marginBottom: "16px" }}><Link2 size={24} /></div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.urlTitle")}</div>
+              <div style={{ fontSize: "12px", color: "var(--clay-text-3)", lineHeight: 1.6 }}>{t(lang, "inputPage.urlDesc")}</div>
             </div>
           </div>
 
         </div>
-      </div>
-
-      {/* Floating Bottom Items */}
-      <div style={{ position: "absolute", bottom: "32px", left: "48px", right: "48px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", pointerEvents: "none" }}>
-        
-        {/* Left: Avatars */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", pointerEvents: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <img src="https://i.pravatar.cc/150?u=a" alt="A" style={{ width: "32px", height: "32px", borderRadius: "50%", border: "2px solid var(--proto-bg)", marginLeft: "0", objectFit: "cover" }} />
-            <img src="https://i.pravatar.cc/150?u=b" alt="B" style={{ width: "32px", height: "32px", borderRadius: "50%", border: "2px solid var(--proto-bg)", marginLeft: "-10px", objectFit: "cover" }} />
-            <div style={{ width: "32px", height: "32px", borderRadius: "50%", border: "2px solid var(--proto-bg)", marginLeft: "-10px", background: "var(--proto-surface2)", color: "var(--proto-text)", fontSize: "10px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
-              +12
-            </div>
-          </div>
-          <div style={{ fontSize: "13px", color: "var(--proto-text-2)", fontWeight: 500 }}>
-            <strong style={{ color: "var(--proto-text)", fontWeight: 700 }}>14 rakan penyelidik</strong> baru sahaja memuat naik bahan hari ini.
-          </div>
-        </div>
-
-        {/* Right: AI Insight Pulse */}
-        <div className="proto-card" style={{ padding: "20px 24px", maxWidth: "340px", display: "flex", flexDirection: "column", gap: "12px", pointerEvents: "auto", borderRadius: "20px", boxShadow: "var(--proto-shadow-lg)", background: "var(--proto-surface)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-              <Sparkles size={14} />
-            </div>
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--amber)", letterSpacing: "0.05em", fontFamily: "var(--proto-font)" }}>AI INSIGHT PULSE</div>
-          </div>
-          <div style={{ fontSize: "13px", color: "var(--proto-text)", fontStyle: "italic", lineHeight: 1.6, fontWeight: 500 }}>
-            "Tip: Muat naik fail PDF yang mempunyai lapisan teks untuk ketepatan analisis 99.8%."
-          </div>
-        </div>
-
       </div>
 
       {/* Loading Overlay */}
@@ -328,13 +296,13 @@ export default function InputPage() {
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(8px)"
         }}>
-          <div className="proto-card" style={{ textAlign: "center", padding: "40px", width: "320px", borderRadius: "24px" }}>
-            <div className="spinner" style={{ margin: "0 auto 24px", borderTopColor: "var(--amber)" }} />
-            <h3 style={{ color: "var(--proto-text)", marginBottom: "8px", fontFamily: "var(--proto-font)", fontSize: "20px" }}>
-              {lang === "ms" ? "Sedang Memproses..." : "Processing..."}
+          <div className="clay-card" style={{ textAlign: "center", padding: "40px", width: "320px" }}>
+            <div className="spinner" style={{ margin: "0 auto 24px", borderTopColor: "var(--clay-primary-deep)" }} />
+            <h3 style={{ color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)", fontSize: "20px" }}>
+              {t(lang, "inputPage.processingTitle")}
             </h3>
-            <p style={{ color: "var(--proto-text-2)", fontSize: "14px" }}>
-              {lang === "ms" ? "Sila tunggu sebentar" : "Please wait a moment"}
+            <p style={{ color: "var(--clay-text-sub)", fontSize: "14px" }}>
+              {t(lang, "inputPage.processingSub")}
             </p>
           </div>
         </div>
