@@ -6,7 +6,16 @@ file is committed to the repo specifically so it survives that).
 ## Where things stand
 
 Phase 1 is **done, reviewed, and pushed**. It rebuilt only the Dashboard page as a flagship
-prototype for a new claymorphism design system. Nothing else in the app has been touched yet.
+prototype for a new claymorphism design system. The local-review checkpoint has now happened
+(Node was installed via **nvm** — no Homebrew — since the machine had neither; `npm run dev`
+ran and the Dashboard was reviewed in the browser in both themes). The review found two issues,
+now **fixed and committed** (`14749c8`):
+- Hero eyebrow/subtitle used white-at-opacity over `--clay-primary-deep` (~3.95:1 fail /
+  ~4.54:1 marginal) — replaced with a fixed `--clay-on-primary-muted` token (`#F3F1FB`, ~4.63:1).
+- Two feature tiles truncated long strings mid-word via `.slice(0,30)` — replaced with
+  purpose-written `f2Sub`/`f5Sub` i18n strings.
+
+**Phase 2 is now planned** (see below). Everything outside the Dashboard is still untouched.
 
 - **Branch:** `feature/claymorphism-dashboard`
 - **Remote:** `deeplearner-os-2` → `https://github.com/JahadNoah/DeepLearner-OS-2.git`
@@ -63,18 +72,27 @@ token for a job it wasn't designed for (a "button background" token used as text
 tokens to new pages, check *what surface* each color/text pairing actually sits on in *each*
 theme — don't assume a token that passed AA in one usage automatically passes in another.
 
-## What's NOT done yet (Phase 2, not started, no plan written)
+## Phase 2 (planned, not started)
 
-Rolling the same `--clay-*` system out to: `InputPage.jsx`, `AudioInput.jsx`, `Transcript.jsx`,
-`Summary.jsx`, `Quiz.jsx`, `History.jsx`, and the shared chrome (`Sidebar.jsx`, `TopHeader.jsx`,
-`BackgroundLayer.jsx`). This is intentionally **not planned yet** — it was deferred until the
-human reviews the Dashboard prototype running locally and decides whether the direction is
-right before more pages get touched.
+**Plan:** `docs/superpowers/plans/2026-07-16-claymorphism-phase2-rollout.md` — written after the
+Phase 1 review checkpoint, sequenced chrome-first, task-by-task with per-task build+browser
+verify and commits, plus two ⏸ review checkpoints.
 
-**Before starting Phase 2:** the user needs to actually run `npm run dev`, look at the
-Dashboard in a browser (light and dark mode, tab through with keyboard), and confirm they're
-happy with it. Don't skip straight to Phase 2 planning without that checkpoint — it's the
-whole reason Dashboard was built alone first.
+Three directional **decisions locked with the user** before the plan was written (they shape
+everything, so don't silently revisit them):
+1. **Amber → purple, everywhere in scope.** The orange/amber accent is removed from all Phase 2
+   files and replaced with clay purple (single-accent look). The `--amber*` tokens stay
+   *defined* (Landing/Login/Register, out of scope, still use them) but are no longer *referenced*
+   by converted files.
+2. **Shared chrome first**, then the six pages.
+3. **Re-skin + content cleanup**, not re-skin only — while converting, remove placeholder filler
+   (fake avatars, "14 rakan penyelidik…", "AI INSIGHT PULSE") and route hardcoded Malay strings
+   through `t()`.
+
+Scope: `Sidebar.jsx` + `BackgroundLayer.jsx` (chrome), then `InputPage.jsx`, `AudioInput.jsx`,
+`Transcript.jsx`, `Summary.jsx`, `Quiz.jsx`, `History.jsx`. **`TopHeader.jsx` is dead code**
+(defined, rendered nowhere — `AppLayout` uses Sidebar + BackgroundLayer only) and is a deletion
+candidate in the plan's Task 0, not a conversion target. Landing/Login/Register stay as-is.
 
 ## Environment gotchas hit during Phase 1 (may or may not still apply)
 
