@@ -7351,6 +7351,7 @@ textarea.input {
   --clay-primary-deep: #6D5BD0;  /* button bg w/ white text (~5.18:1 contrast, AA pass), same value as light theme */
   --clay-accent: #FFB4A2;
   --clay-on-accent: #332F3A;     /* fixed dark text/icon color for on top of --clay-accent (same fixed bg in both themes) — ~7.6:1 */
+  --clay-on-primary-muted: #F3F1FB; /* dimmed-but-legible text on --clay-primary-deep (~4.63:1, AA pass, same fixed value both themes) — use instead of white+opacity, which drops below AA */
   --clay-link: #A594F9;          /* text-safe link color on card surface (~5.68:1 vs #2B2735) — do not use --clay-primary-deep as text */
   --clay-success: #8FD9B6;
   --clay-success-tint: #24463A;
@@ -7386,6 +7387,7 @@ textarea.input {
   --clay-primary-deep: #6D5BD0;
   --clay-accent: #FFB4A2;
   --clay-on-accent: #332F3A;     /* fixed dark text/icon color for on top of --clay-accent (same fixed bg in both themes) — ~7.6:1 */
+  --clay-on-primary-muted: #F3F1FB; /* dimmed-but-legible text on --clay-primary-deep (~4.63:1, AA pass, same fixed value both themes) — use instead of white+opacity, which drops below AA */
   --clay-link: #6D5BD0;          /* text-safe link color on white/light surface (~5.18:1) — do not use --clay-primary-deep as text */
   --clay-success: #8FD9B6;
   --clay-success-tint: #E6F6EE;

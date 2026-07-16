@@ -101,10 +101,10 @@ export default function Dashboard() {
   const ACCENT = "#B85C00";
   const features = [
     { icon: <Mic size={20} />, title: t(lang, "dashboard.f1Title"), desc: t(lang, "dashboard.chip1Sub"), path: "/input", color: ACCENT },
-    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Desc").slice(0, 30) + "…", path: "/input", color: ACCENT },
+    { icon: <FileText size={20} />, title: t(lang, "dashboard.f2Title"), desc: t(lang, "dashboard.f2Sub"), path: "/input", color: ACCENT },
     { icon: <Sparkles size={20} />, title: t(lang, "dashboard.f3Title"), desc: t(lang, "dashboard.chip2Sub"), path: "/input", color: ACCENT },
     { icon: <HelpCircle size={20} />, title: t(lang, "dashboard.f4Title"), desc: t(lang, "dashboard.chip3Sub"), path: "/input", color: ACCENT },
-    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Desc").slice(0, 30) + "…", path: "/history", color: ACCENT },
+    { icon: <History size={20} />, title: t(lang, "dashboard.f5Title"), desc: t(lang, "dashboard.f5Sub"), path: "/history", color: ACCENT },
   ];
 
   return (
@@ -143,13 +143,13 @@ export default function Dashboard() {
           className="clay-card"
           style={{ background: "var(--clay-primary-deep)", color: "#FFFFFF" }}
         >
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", opacity: 0.8, marginBottom: "8px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--clay-on-primary-muted)", marginBottom: "8px" }}>
             ✦ DEEPLEARNER OS
           </div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, fontFamily: "var(--clay-font-head)", marginBottom: "8px", color: "#FFFFFF" }}>
             {t(lang, "dashboard.welcome", { name })}
           </h1>
-          <p style={{ fontSize: "13px", opacity: 0.9, marginBottom: "20px", maxWidth: "400px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "13px", color: "var(--clay-on-primary-muted)", marginBottom: "20px", maxWidth: "400px", lineHeight: 1.6 }}>
             {t(lang, "dashboard.subtitle")}
           </p>
           <div style={{ display: "flex", gap: "12px" }}>
