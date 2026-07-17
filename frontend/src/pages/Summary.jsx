@@ -7,7 +7,7 @@ import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { Sparkles, Download, Archive, FileText, Zap, Layers, MessageCircle } from "lucide-react";
+import { Sparkles, Download, Archive, FileText, Zap, Layers, MessageCircle, BookOpen } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -197,12 +197,20 @@ export default function Summary() {
             </h1>
           </div>
           {summary?.IDtranskripsi && (
-            <button
-              className="proto-btn-outline"
-              onClick={() => navigate(`/chat/${summary.IDtranskripsi}`, { state: { tajuk: transcript?.tajuk } })}
-            >
-              <MessageCircle size={14} /> {t(lang, "proto.askNotes")}
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                className="proto-btn-outline"
+                onClick={() => navigate(`/study/${summary.IDtranskripsi}`, { state: { tajuk: transcript?.tajuk } })}
+              >
+                <BookOpen size={14} /> {t(lang, "proto.studyPack")}
+              </button>
+              <button
+                className="proto-btn-outline"
+                onClick={() => navigate(`/chat/${summary.IDtranskripsi}`, { state: { tajuk: transcript?.tajuk } })}
+              >
+                <MessageCircle size={14} /> {t(lang, "proto.askNotes")}
+              </button>
+            </div>
           )}
         </div>
 

@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routers import transkripsi, ringkasan, kuiz, nota, dokumen, progress, flashcard, chat
+from routers import transkripsi, ringkasan, kuiz, nota, dokumen, progress, flashcard, chat, study
 
 app = FastAPI(
     title="DeepLearner OS API",
@@ -38,6 +38,7 @@ app.include_router(dokumen.router, prefix="/api", tags=["Dokumen PDF"])
 app.include_router(progress.router, prefix="/api", tags=["Progress"])
 app.include_router(flashcard.router, prefix="/api", tags=["Flashcard"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
+app.include_router(study.router, prefix="/api", tags=["Study"])
 
 
 @app.get("/health")
