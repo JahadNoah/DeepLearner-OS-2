@@ -7,7 +7,7 @@ import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { Sparkles, Download, Archive, FileText, Zap } from "lucide-react";
+import { Sparkles, Download, Archive, FileText, Zap, Layers } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -48,6 +48,7 @@ export default function Summary() {
   const [summary, setSummary] = useState(location.state?.summary || null);
   const [transcript] = useState(location.state?.transcript || null);
   const [loading, setLoading] = useState(false);
+  const [loadingFlash, setLoadingFlash] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(!location.state?.summary);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -81,6 +82,26 @@ export default function Summary() {
       setError(t(lang, "summary.errQuiz"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateFlashcards = async () => {
+    setLoadingFlash(true);
+    setError("");
+    const noMatrik = auth.currentUser?.email?.split("@")[0] || "unknown";
+    try {
+      const res = await axios.post(`${API_URL}/generate-flashcards`, {
+        idRingkasan: id,
+        noMatrik,
+        num_cards: 10,
+      });
+      navigate(`/flashcards/${id}/review`, {
+        state: { deck: res.data.kadImbas },
+      });
+    } catch (err) {
+      setError(t(lang, "summary.errFlash"));
+    } finally {
+      setLoadingFlash(false);
     }
   };
 
@@ -248,13 +269,22 @@ export default function Summary() {
             <Archive size={14} /> {saved ? t(lang, "summary.saved") : saving ? t(lang, "summary.saving") : t(lang, "proto.saveToArchive")}
           </button>
         </div>
-        <button
-          className="proto-btn-primary"
-          onClick={handleGenerateQuiz}
-          disabled={loading}
-        >
-          {loading ? t(lang, "summary.quizLoading") : t(lang, "proto.generateQuiz")} →
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            className="proto-btn-outline"
+            onClick={handleGenerateFlashcards}
+            disabled={loadingFlash}
+          >
+            <Layers size={14} /> {loadingFlash ? t(lang, "summary.flashLoading") : t(lang, "proto.generateFlashcards")}
+          </button>
+          <button
+            className="proto-btn-primary"
+            onClick={handleGenerateQuiz}
+            disabled={loading}
+          >
+            {loading ? t(lang, "summary.quizLoading") : t(lang, "proto.generateQuiz")} →
+          </button>
+        </div>
       </div>
 
       {/* Loading Overlay */}
@@ -270,6 +300,24 @@ export default function Summary() {
             </h3>
             <p style={{ color: "var(--proto-text-2)", fontSize: "13px" }}>
               {t(lang, "summary.loadingBody")}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Flashcard Loading Overlay */}
+      {loadingFlash && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="proto-card" style={{ textAlign: "center", padding: "32px", minWidth: "240px" }}>
+            <div className="spinner" style={{ margin: "0 auto 16px" }} />
+            <h3 style={{ color: "var(--proto-text)", marginBottom: "8px" }}>
+              {t(lang, "summary.flashLoadingHeading")}
+            </h3>
+            <p style={{ color: "var(--proto-text-2)", fontSize: "13px" }}>
+              {t(lang, "summary.flashLoadingBody")}
             </p>
           </div>
         </div>

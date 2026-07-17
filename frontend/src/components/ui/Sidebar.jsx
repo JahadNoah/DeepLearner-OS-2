@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, LogOut, Sun, Moon, Globe, Menu, X } from "lucide-react";
+import { Home, Plus, Clock, LogOut, Sun, Moon, Globe, Menu, X, Layers } from "lucide-react";
 import { useTheme } from "../../context/useTheme";
 import { useLanguage } from "../../context/useLanguage";
 import { auth } from "../../firebase";
@@ -29,6 +29,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
 
   const navItems = [
     { id: "dashboard", label: { ms: "Utama", en: "Dashboard" }, icon: Home, path: "/app" },
+    { id: "flashcards", label: { ms: "Kad Imbas", en: "Flashcards" }, icon: Layers, path: "/flashcards" },
     { id: "history", label: { ms: "Sejarah", en: "History" }, icon: Clock, path: "/history" },
   ];
 
