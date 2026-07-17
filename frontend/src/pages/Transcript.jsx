@@ -7,7 +7,7 @@ import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
 import { Copy, Download, Sparkles, FileText, MessageCircle } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://deeplearner.onrender.com/api" : "/api");
 
 /** Visual 3-step progress indicator */
 function StepIndicator({ current, lang }) {

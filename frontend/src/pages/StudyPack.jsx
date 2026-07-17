@@ -8,7 +8,7 @@ import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
 import { BookOpen, Clock, List, HelpCircle, ArrowLeft, RefreshCw } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://deeplearner.onrender.com/api" : "/api");
 
 const TABS = [
   { id: "guide", labelKey: "study.tabGuide", icon: BookOpen },

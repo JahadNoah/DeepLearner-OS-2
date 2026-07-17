@@ -9,7 +9,7 @@ import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
 import { Sparkles, Download, Archive, FileText, Zap, Layers, MessageCircle, BookOpen } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://deeplearner.onrender.com/api" : "/api");
 
 /** Shared 3-step progress indicator */
 function StepIndicator({ current, lang }) {

@@ -8,7 +8,7 @@ import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
 import { MessageCircle, Send, ArrowLeft } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://deeplearner.onrender.com/api" : "/api");
 
 export default function Chat() {
   const { id } = useParams(); // IDtranskripsi

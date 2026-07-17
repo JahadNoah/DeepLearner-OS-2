@@ -6,7 +6,7 @@ import { HelpCircle, RotateCcw, Home, CheckCircle, XCircle, ArrowLeft } from "lu
 import { db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://deeplearner.onrender.com/api" : "/api");
 
 export default function Quiz() {
   const location = useLocation();
