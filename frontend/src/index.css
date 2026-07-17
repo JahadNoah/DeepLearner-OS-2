@@ -6972,8 +6972,43 @@ textarea.input {
   padding: 28px 28px 98px; /* Extra bottom padding for bottom bar */
 }
 
+/* ─── Sidebar Mobile Drawer Controls ─────────────────────── */
+.proto-sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--clay-surface);
+  border: 1px solid rgba(139,124,246,0.12);
+  color: var(--clay-text);
+  box-shadow: var(--clay-shadow);
+  cursor: pointer;
+  z-index: 110;
+}
+
+.proto-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 99;
+}
+
 /* ─── Responsive (Mobile) ────────────────────────────────── */
 @media (max-width: 768px) {
+  .proto-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .proto-sidebar-backdrop {
+    display: block;
+  }
+
   .proto-sidebar {
     transform: translateX(-100%);
     transition: transform var(--proto-transition);
@@ -6993,6 +7028,48 @@ textarea.input {
 
   .proto-topbar-tabs {
     margin-left: 0;
+  }
+
+  /* Clear the fixed hamburger toggle (top:16 + 40px) and tighten side gutters */
+  .proto-content {
+    padding-top: 64px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* ─── InputPage Layout ───────────────────────────────────── */
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 12px;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 24px;
+}
+
+.input-subcards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Stack the two source cards (Audio/Docs on top, Paste-text below) on mobile */
+@media (max-width: 768px) {
+  .input-header {
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 0;
+  }
+  .input-grid {
+    grid-template-columns: 1fr;
+  }
+  .input-subcards {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -7200,12 +7277,32 @@ textarea.input {
   from { stroke-dashoffset: 251; }
 }
 
-.proto-score-ring-wrap {
+/* Hero row: score ring beside grade/summary/actions (stacks on mobile) */
+.proto-quiz-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+}
+
+.proto-quiz-hero-actions {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.proto-quiz-hero-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.proto-quiz-hero-btns > * {
+  width: 100%;
 }
 
 .proto-score-ring {
@@ -7232,7 +7329,7 @@ textarea.input {
   stroke-linecap: round;
   stroke-dasharray: 251;
   animation: ring-fill 1.2s ease-out forwards;
-  filter: drop-shadow(0 0 6px rgba(184,92,0,0.45));
+  filter: drop-shadow(0 0 6px rgba(109,91,208,0.45));
 }
 
 .proto-score-ring-text {
@@ -7290,12 +7387,18 @@ textarea.input {
 }
 
 /* ─── Result Item (quiz breakdown) ───────────────────────── */
+/* Responsive grid: multi-column on desktop, single column on phones */
+.proto-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
 .proto-result-item {
   display: flex;
   gap: 12px;
   padding: 14px;
   border-radius: 10px;
-  margin-bottom: 10px;
   border: 1px solid var(--proto-border);
   background: var(--proto-surface);
   align-items: flex-start;
@@ -7319,6 +7422,25 @@ textarea.input {
 
 .proto-result-icon.correct { background: rgba(0,230,118,0.15); color: #00e676; }
 .proto-result-icon.wrong   { background: rgba(244,67,54,0.12); color: #f44336; }
+
+/* Quiz results responsive: hero stacks below 768px, grid single-column below 700px */
+@media (max-width: 768px) {
+  .proto-quiz-hero-row {
+    flex-direction: column;
+  }
+  .proto-quiz-hero-actions {
+    align-items: center;
+    max-width: 100%;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 700px) {
+  .proto-results-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ─── Generated-by chip ──────────────────────────────────── */
 .proto-generated-chip {

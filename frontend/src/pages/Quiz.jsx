@@ -172,25 +172,30 @@ export default function Quiz() {
 
   // ─── Results Screen ───────────────────────────────────────
   if (done) {
+    const wrongCount = questions.length - score;
     return (
       <>
-        <div className="proto-content" style={{ maxWidth: "640px", margin: "0 auto" }}>
+        <div className="proto-content" style={{ maxWidth: "880px", margin: "0 auto" }}>
 
           {/* Congratulations Card */}
-          <div className="proto-card" style={{ textAlign: "center", marginBottom: "20px", padding: "32px" }}>
-            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎉</div>
-            <h1 style={{
-              fontFamily: "var(--proto-font)", fontSize: "22px", fontWeight: 700,
-              color: "var(--proto-text)", marginBottom: "6px",
-            }}>
-              {t(lang, "proto.congratulations")}
-            </h1>
-            <p style={{ color: "var(--proto-text-2)", marginBottom: "24px", fontSize: "14px" }}>
-              {t(lang, "quiz.completedMsg")}
-            </p>
+          <div className="proto-card" style={{ marginBottom: "20px", padding: "32px" }}>
+            {/* Celebration header */}
+            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎉</div>
+              <h1 style={{
+                fontFamily: "var(--proto-font)", fontSize: "22px", fontWeight: 700,
+                color: "var(--proto-text)", marginBottom: "6px",
+              }}>
+                {t(lang, "proto.congratulations")}
+              </h1>
+              <p style={{ color: "var(--proto-text-2)", fontSize: "14px" }}>
+                {t(lang, "quiz.completedMsg")}
+              </p>
+            </div>
 
-            {/* Score Ring */}
-            <div className="proto-score-ring-wrap">
+            {/* Ring + details, side by side on desktop */}
+            <div className="proto-quiz-hero-row">
+              {/* Score Ring */}
               <div className="proto-score-ring">
                 <svg width="120" height="120" viewBox="0 0 120 120">
                   <circle className="proto-score-ring-bg" cx="60" cy="60" r="40" />
@@ -206,61 +211,82 @@ export default function Quiz() {
                 </div>
               </div>
 
-              {/* Grade chip */}
-              <span className={`proto-grade-chip ${gradeClass}`}>
-                {t(lang, gradeKey)}
-              </span>
+              {/* Grade + summary + actions */}
+              <div className="proto-quiz-hero-actions">
+                <span className={`proto-grade-chip ${gradeClass}`}>
+                  {t(lang, gradeKey)}
+                </span>
 
-              <div style={{ fontSize: "13px", color: "var(--proto-text-2)" }}>
-                {t(lang, "quiz.scoreSummary", { score, total: questions.length })}
+                <div style={{ fontSize: "13px", color: "var(--proto-text-2)" }}>
+                  {t(lang, "quiz.scoreSummary", { score, total: questions.length })}
+                </div>
+
+                <div className="proto-quiz-hero-btns">
+                  <button className="proto-btn-outline" onClick={handleRetry}>
+                    <RotateCcw size={14} /> {t(lang, "proto.retryQuiz")}
+                  </button>
+                  {summary && (
+                    <button
+                      className="proto-btn-outline"
+                      onClick={() => navigate(-1)}
+                    >
+                      <ArrowLeft size={14} /> {t(lang, "proto.backToSummary")}
+                    </button>
+                  )}
+                  <Link to="/app" className="proto-btn-primary" style={{ textDecoration: "none" }}>
+                    <Home size={14} /> {t(lang, "quiz.homeBtn")}
+                  </Link>
+                </div>
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-              <button className="proto-btn-outline" onClick={handleRetry}>
-                <RotateCcw size={14} /> {t(lang, "proto.retryQuiz")}
-              </button>
-              {summary && (
-                <button
-                  className="proto-btn-outline"
-                  onClick={() => navigate(-1)}
-                >
-                  <ArrowLeft size={14} /> {t(lang, "proto.backToSummary")}
-                </button>
-              )}
-              <Link to="/app" className="proto-btn-primary" style={{ textDecoration: "none" }}>
-                <Home size={14} /> {t(lang, "quiz.homeBtn")}
-              </Link>
             </div>
           </div>
 
           {/* Results Breakdown */}
           <div className="proto-card">
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)", marginBottom: "16px" }}>
-              {t(lang, "quiz.resultsHeading")}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--proto-text)" }}>
+                {t(lang, "quiz.resultsHeading")}
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "5px",
+                  fontSize: "12px", fontWeight: 600, padding: "4px 10px", borderRadius: "100px",
+                  background: "rgba(0,230,118,0.12)", color: "#00e676",
+                }}>
+                  ✓ {t(lang, "quiz.correctCount", { n: score })}
+                </span>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "5px",
+                  fontSize: "12px", fontWeight: 600, padding: "4px 10px", borderRadius: "100px",
+                  background: "rgba(244,67,54,0.12)", color: "#f44336",
+                }}>
+                  ✗ {t(lang, "quiz.wrongCount", { n: wrongCount })}
+                </span>
+              </div>
             </div>
 
-            {results.map((r, i) => (
-              <div key={i} className={`proto-result-item ${r.correct ? "correct" : "wrong"}`}>
-                <div className={`proto-result-icon ${r.correct ? "correct" : "wrong"}`}>
-                  {r.correct ? "✓" : "✗"}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--proto-text)", marginBottom: "4px" }}>
-                    {t(lang, "quiz.questionLabel", { n: i + 1 })}: {r.soalan.length > 80 ? r.soalan.slice(0, 80) + "…" : r.soalan}
+            <div className="proto-results-grid">
+              {results.map((r, i) => (
+                <div key={i} className={`proto-result-item ${r.correct ? "correct" : "wrong"}`}>
+                  <div className={`proto-result-icon ${r.correct ? "correct" : "wrong"}`}>
+                    {r.correct ? "✓" : "✗"}
                   </div>
-                  <div style={{ fontSize: "12px", color: r.correct ? "#00e676" : "var(--proto-text-2)" }}>
-                    {t(lang, "quiz.correctAnswer", { answer: r.jawapan })}
-                  </div>
-                  {!r.correct && r.penjelasan && (
-                    <div style={{ fontSize: "11px", color: "var(--proto-text-3)", marginTop: "4px" }}>
-                      💡 {r.penjelasan}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--proto-text)", marginBottom: "4px" }}>
+                      {t(lang, "quiz.questionLabel", { n: i + 1 })}: {r.soalan.length > 80 ? r.soalan.slice(0, 80) + "…" : r.soalan}
                     </div>
-                  )}
+                    <div style={{ fontSize: "12px", color: r.correct ? "#00e676" : "var(--proto-text-2)" }}>
+                      {t(lang, "quiz.correctAnswer", { answer: r.jawapan })}
+                    </div>
+                    {!r.correct && r.penjelasan && (
+                      <div style={{ fontSize: "11px", color: "var(--proto-text-3)", marginTop: "4px" }}>
+                        💡 {r.penjelasan}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </>

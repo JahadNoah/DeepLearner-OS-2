@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, LogOut, Sun, Moon, Globe } from "lucide-react";
+import { Home, Plus, Clock, LogOut, Sun, Moon, Globe, Menu, X } from "lucide-react";
 import { useTheme } from "../../context/useTheme";
 import { useLanguage } from "../../context/useLanguage";
 import { auth } from "../../firebase";
@@ -8,9 +8,15 @@ import { signOut } from "firebase/auth";
 
 export function Sidebar({ user, activeItem = "dashboard" }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { lang, toggleLang } = useLanguage();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
 
   const handleLogout = async () => {
     try {
@@ -33,7 +39,20 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
   };
 
   return (
-    <aside className="proto-sidebar">
+    <>
+      <button
+        className="proto-sidebar-toggle"
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-label={mobileOpen ? (lang === "ms" ? "Tutup menu" : "Close menu") : (lang === "ms" ? "Buka menu" : "Open menu")}
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {mobileOpen && (
+        <div className="proto-sidebar-backdrop" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside className={`proto-sidebar ${mobileOpen ? "open" : ""}`}>
       {/* Logo Section */}
       <div className="proto-sidebar-logo">
         <div className="brand">DeepLearner OS</div>
@@ -136,6 +155,7 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
             <Link
               key={item.id}
               to={item.path}
+              onClick={() => setMobileOpen(false)}
               className={`proto-nav-item ${activeItem === item.id ? "active" : ""}`}
             >
               <Icon className="icon" size={18} />
@@ -148,11 +168,12 @@ export function Sidebar({ user, activeItem = "dashboard" }) {
       {/* Bottom CTA */}
       <button
         className="proto-sidebar-cta"
-        onClick={() => navigate("/input")}
+        onClick={() => { setMobileOpen(false); navigate("/input"); }}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         <Plus size={16} /> {lang === "ms" ? "Sesi Baharu" : "New Session"}
       </button>
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -105,7 +105,7 @@ export default function InputPage() {
   return (
     <div className="proto-content" style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", paddingBottom: "48px" }}>
       {/* Header Area */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", paddingTop: "12px" }}>
+      <div className="input-header" style={{ marginBottom: "32px" }}>
         <div>
           <div style={{ fontSize: "12px", color: "var(--clay-text-3)", marginBottom: "8px", fontWeight: "600", letterSpacing: "0.05em" }}>
             {t(lang, "inputPage.breadcrumb")} &nbsp;&nbsp;›&nbsp;&nbsp; <span style={{ color: "var(--clay-link)" }}>{t(lang, "inputPage.step")}</span>
@@ -139,7 +139,7 @@ export default function InputPage() {
       )}
 
       {/* Main Content Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: "24px", flex: 1 }}>
+      <div className="input-grid" style={{ flex: 1 }}>
 
         {/* LEFT COLUMN: Dokumen & Slaid */}
         <div className="clay-card" style={{ padding: "32px", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -274,7 +274,7 @@ export default function InputPage() {
           </div>
 
           {/* Bottom two small cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+          <div className="input-subcards">
             <div className="clay-card" style={{ padding: "24px", cursor: "pointer" }}>
               <div style={{ color: "var(--clay-text-3)", marginBottom: "16px" }}><Sparkles size={24} /></div>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--clay-text)", marginBottom: "8px", fontFamily: "var(--clay-font-head)" }}>{t(lang, "inputPage.quickTitle")}</div>
