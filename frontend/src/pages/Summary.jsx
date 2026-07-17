@@ -7,7 +7,7 @@ import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { Sparkles, Download, Archive, FileText, Zap, Layers } from "lucide-react";
+import { Sparkles, Download, Archive, FileText, Zap, Layers, MessageCircle } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -189,11 +189,21 @@ export default function Summary() {
         <StepIndicator current={2} lang={lang} />
 
         {/* Page Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-          <Sparkles size={24} style={{ color: "var(--amber)" }} />
-          <h1 style={{ fontFamily: "var(--proto-font)", fontSize: "24px", fontWeight: 700, color: "var(--proto-text)" }}>
-            {t(lang, "summary.heading")}
-          </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "4px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Sparkles size={24} style={{ color: "var(--amber)" }} />
+            <h1 style={{ fontFamily: "var(--proto-font)", fontSize: "24px", fontWeight: 700, color: "var(--proto-text)" }}>
+              {t(lang, "summary.heading")}
+            </h1>
+          </div>
+          {summary?.IDtranskripsi && (
+            <button
+              className="proto-btn-outline"
+              onClick={() => navigate(`/chat/${summary.IDtranskripsi}`, { state: { tajuk: transcript?.tajuk } })}
+            >
+              <MessageCircle size={14} /> {t(lang, "proto.askNotes")}
+            </button>
+          )}
         </div>
 
         <p style={{ marginBottom: "20px", color: "var(--proto-text-2)", fontSize: "14px", maxWidth: "520px" }}>

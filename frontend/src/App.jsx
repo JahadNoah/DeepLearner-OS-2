@@ -16,6 +16,7 @@ const Quiz = lazy(() => import("./pages/Quiz"));
 const History = lazy(() => import("./pages/History"));
 const Flashcards = lazy(() => import("./pages/Flashcards"));
 const FlashcardReview = lazy(() => import("./pages/FlashcardReview"));
+const Chat = lazy(() => import("./pages/Chat"));
 
 function ProtectedRoute({ children, user }) {
   if (user === undefined) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -30,6 +31,7 @@ function getActiveItem(pathname) {
   if (pathname.startsWith("/transcript")) return "new-session";
   if (pathname.startsWith("/summary")) return "new-session";
   if (pathname.startsWith("/quiz")) return "new-session";
+  if (pathname.startsWith("/chat")) return "new-session";
   return "dashboard";
 }
 
@@ -127,6 +129,11 @@ export default function App() {
         <Route path="/flashcards/:id/review" element={
           <ProtectedRoute user={user}>
             <AppLayout user={user}><FlashcardReview /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/chat/:id" element={
+          <ProtectedRoute user={user}>
+            <AppLayout user={user}><Chat /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" />} />

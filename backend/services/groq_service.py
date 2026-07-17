@@ -217,7 +217,35 @@ def groq_chat(
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_content},
     ]
+    return _complete(messages, temperature, max_tokens)
 
+
+def groq_chat_messages(
+    messages: list,
+    temperature: float = 0.3,
+    max_tokens: int = 1024,
+) -> str:
+    """
+    Send a MULTI-turn chat completion to Groq and return the assistant text.
+
+    `messages` is a full OpenAI-style array, e.g.:
+      [{"role": "system", ...}, {"role": "user", ...},
+       {"role": "assistant", ...}, {"role": "user", ...}]
+
+    Same key-rotation / transient-overload retry behaviour and the same
+    ""-on-failure contract as groq_chat.
+    """
+    if not _GROQ_KEYS:
+        return ""
+    return _complete(messages, temperature, max_tokens)
+
+
+def _complete(messages: list, temperature: float, max_tokens: int) -> str:
+    """Shared Groq completion loop: key rotation + transient-overload retry.
+
+    Returns the stripped assistant text, or "" on any failure (callers treat
+    "" as "Groq unavailable").
+    """
     for idx, api_key in enumerate(_GROQ_KEYS):
         client = _get_client(api_key)
         if client is None:

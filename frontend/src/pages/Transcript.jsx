@@ -5,7 +5,7 @@ import axios from "axios";
 import jsPDF from "jspdf";
 import { useLanguage } from "../context/useLanguage";
 import { t } from "../i18n/translations";
-import { Copy, Download, Sparkles, FileText } from "lucide-react";
+import { Copy, Download, Sparkles, FileText, MessageCircle } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -144,6 +144,13 @@ export default function Transcript() {
           <div style={{ fontSize: "12px", color: "var(--proto-text-3)" }}>
             {today} &bull; {t(lang, "proto.referenceId")}: <strong style={{ color: "var(--amber)" }}>{refId}</strong>
           </div>
+          <button
+            className="proto-btn-outline"
+            style={{ marginTop: "14px" }}
+            onClick={() => navigate(`/chat/${id}`, { state: { tajuk: transcript.tajuk } })}
+          >
+            <MessageCircle size={14} /> {t(lang, "proto.askNotes")}
+          </button>
         </div>
 
         {/* Error Message */}
